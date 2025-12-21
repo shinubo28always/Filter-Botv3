@@ -5,7 +5,7 @@ from bot_instance import bot
 import config
 from utils import send_log
 
-# Plugins Import
+# Plugins import 
 import plugins.auth
 import plugins.setup
 import plugins.search
