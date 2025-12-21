@@ -1,4 +1,6 @@
+import sys
 import os
+sys.path.append(os.getcwd())
 import threading
 from flask import Flask
 from bot_instance import bot
