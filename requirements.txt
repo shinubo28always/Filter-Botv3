@@ -3,3 +3,4 @@ pymongo[srv]
 requests
 thefuzz
 python-dotenv
+flask
