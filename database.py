@@ -1,6 +1,7 @@
 from pymongo import MongoClient
 import config
 
+# MongoDB Connection
 client = MongoClient(config.MONGO_URI)
 db = client['anime_filter_bot']
 
@@ -13,8 +14,8 @@ def add_user(uid):
     users.update_one({"_id": uid}, {"$set": {"_id": uid}}, upsert=True)
 
 def is_admin(uid):
-    if uid == config.OWNER_ID: return True
-    return admins.find_one({"_id": uid}) is not None
+    if str(uid) == str(config.OWNER_ID): return True
+    return admins.find_one({"_id": str(uid)}) is not None
 
 def add_filter(keyword, data):
     filters.update_one({"keyword": keyword.lower()}, {"$set": data}, upsert=True)
