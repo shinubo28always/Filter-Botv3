@@ -2,7 +2,7 @@ from pymongo import MongoClient
 import config
 
 client = MongoClient(config.MONGO_URI)
-db = client['anime_pro_db']
+db = client['anime_pro_database']
 
 users = db['users']
 filters = db['filters']
@@ -52,10 +52,13 @@ def get_all_keywords():
 def get_all_filters_list():
     return list(filters.find({}, {"keyword": 1, "title": 1}))
 
-# Request
-def save_request(uid, name, text):
-    requests_db.insert_one({"uid": str(uid), "name": name, "text": text, "status": "pending"})
+# FSub & Request
+def set_fsub(cid):
+    settings.update_one({"key": "fsub"}, {"$set": {"value": str(cid)}}, upsert=True)
 
 def get_fsub():
     res = settings.find_one({"key": "fsub"})
     return res['value'] if res else None
+
+def save_request(uid, name, query):
+    requests_db.insert_one({"uid": str(uid), "name": name, "query": query})
