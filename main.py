@@ -1,59 +1,42 @@
-import sys
 import os
+import sys
 import threading
 import time
 from flask import Flask
-
-# Path fix for Render
-sys.path.append(os.getcwd())
-
 from bot_instance import bot
 import config
 from utils import send_log
 
-# 1. PEHLE COMMANDS IMPORT KAREIN
-print("DEBUG: Loading Commands...")
-import plugins.commands
+sys.path.append(os.getcwd())
 
-# 2. PHIR AUTH AUR SETUP
-print("DEBUG: Loading Auth & Setup...")
+# Import Order
+import plugins.commands
+import plugins.request
+import plugins.broadcast
 import plugins.auth
 import plugins.setup
-
-# 3. SABSE LAST MEIN SEARCH
-print("DEBUG: Loading Search...")
 import plugins.search
 
 app = Flask(__name__)
-
 @app.route('/')
-def health_check():
-    return "Bot is Alive!", 200
+def health(): return "Active", 200
 
 def run_flask():
     port = int(os.environ.get("PORT", 8080))
     app.run(host='0.0.0.0', port=port)
 
 if __name__ == "__main__":
-    if not config.API_TOKEN:
-        print("❌ CRITICAL ERROR: API_TOKEN is empty!")
-        exit()
-
-    # Flask Thread
     threading.Thread(target=run_flask, daemon=True).start()
     
-    # Conflict Clear
+    # --- CONFLICT FIX ---
     bot.delete_webhook(drop_pending_updates=True)
-    print(f"🚀 Bot Started Successfully! ID: {config.OWNER_ID}")
-
+    time.sleep(1) 
+    
+    print("🚀 Bot Started Successfully!")
+    send_log("<b>Bot is Online!</b>")
+    
     while True:
         try:
-            # infinity_polling with all allowed updates
-            bot.infinity_polling(
-                timeout=60, 
-                long_polling_timeout=20, 
-                allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member', 'channel_post']
-            )
+            bot.infinity_polling(timeout=60, allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member'])
         except Exception as e:
-            print(f"⚠️ Polling Error: {e}")
             time.sleep(5)
