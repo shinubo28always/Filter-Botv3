@@ -1,4 +1,6 @@
 import requests
+import config
+from bot_instance import bot
 
 def get_anime_info(name):
     try:
@@ -30,3 +32,10 @@ def get_anime_info(name):
     except Exception as e:
         print(f"MAL Error: {e}")
         return None
+
+def send_log(text):
+    """Log channel mein report bhejne ke liye"""
+    try:
+        bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}")
+    except Exception as e:
+        print(f"Log Error: {e}")
