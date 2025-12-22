@@ -1,54 +1,89 @@
-from bot_instance import bot
-import config
-import database as db
-from telebot import types
 import time
+from bot_instance import bot
+import database as db
+import config
+from telebot import types
 
-@bot.message_handler(commands=['start'])
-def start(message):
-    bot.send_sticker(message.chat.id, config.STICKER_ID)
-    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("📢 Updates", url=config.LINK_ANIME_CHANNEL))
-    bot.send_message(message.chat.id, "🎬 <b>Bot Online!</b>\nSearch anime below.", reply_markup=markup, message_effect_id=config.EFFECT_FIRE)
+# Temporary storage for broadcast data
+BC_TEMP = {}
 
-@bot.message_handler(commands=['filters'])
-def list_fs(message):
+@bot.message_handler(commands=['broadcast', 'gbroadcast'])
+def broadcast_init(message):
     if not db.is_admin(message.from_user.id): return
-    fs = db.get_all_filters_list()
-    if not fs: return bot.reply_to(message, "No filters.")
-    txt = "📂 <b>Filters:</b>\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
-    bot.reply_to(message, txt[:4000])
-
-@bot.message_handler(commands=['del_filter'])
-def delete_fs(message):
-    if not db.is_admin(message.from_user.id): return
-    args = message.text.split()
-    if len(args) < 2: return bot.reply_to(message, "Usage: /del_filter name/all")
     
-    target = args[1].lower()
-    if target == "all":
-        if db.get_filter("all"): 
-            db.delete_filter("all")
-            bot.reply_to(message, "Deleted filter named 'all'.")
-        else:
-            markup = types.InlineKeyboardMarkup().add(
-                types.InlineKeyboardButton("Confirm Delete All", callback_data="conf_all"),
-                types.InlineKeyboardButton("Cancel", callback_data="cancel")
-            )
-            bot.reply_to(message, "⚠️ <b>Warning:</b> Delete EVERYTHING?", reply_markup=markup)
-    else:
-        if db.delete_filter(target): bot.reply_to(message, f"Deleted {target}")
-        else: bot.reply_to(message, "Not found.")
+    if not message.reply_to_message:
+        return bot.reply_to(message, "⚠️ <b>Error:</b> Kisi message ka <b>Reply</b> karke command dein.")
+    
+    mode = "PM" if message.text.startswith("/broadcast") else "Group"
+    uid = message.from_user.id
+    
+    # Save broadcast info
+    BC_TEMP[uid] = {
+        "msg_id": message.reply_to_message.message_id,
+        "from_chat": message.chat.id,
+        "mode": mode
+    }
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.row(
+        types.InlineKeyboardButton("🚫 Normal (No Tag)", callback_data="bc_mode|normal"),
+        types.InlineKeyboardButton("🏷️ With Tag", callback_data="bc_mode|tag")
+    )
+    markup.add(types.InlineKeyboardButton("❌ Cancel", callback_data="bc_cancel"))
+    
+    bot.reply_to(
+        message, 
+        f"🚀 <b>Broadcast Setup ({mode})</b>\n\nKaise forward karna chahte hain?", 
+        reply_markup=markup
+    )
 
-@bot.callback_query_handler(func=lambda call: call.data in ["conf_all", "cancel"])
-def handle_del_all(call):
-    if call.data == "conf_all":
-        db.delete_all_filters()
-        bot.edit_message_text("🗑 All filters cleared.", call.message.chat.id, call.message.message_id)
-    else: bot.delete_message(call.message.chat.id, call.message.message_id)
+@bot.callback_query_handler(func=lambda call: call.data.startswith("bc_"))
+def handle_bc_callback(call):
+    uid = call.from_user.id
+    if uid not in BC_TEMP:
+        return bot.answer_callback_query(call.id, "Setup Expired!", show_alert=True)
 
-@bot.message_handler(commands=['stats'])
-def stats(message):
-    if not db.is_admin(message.from_user.id): return
-    u = len(db.get_all_users())
-    f = len(db.get_all_filters_list())
-    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: {u}\nFilters: {f}")
+    if call.data == "bc_cancel":
+        del BC_TEMP[uid]
+        bot.edit_message_text("❌ Broadcast Cancelled.", call.message.chat.id, call.message.message_id)
+        return
+
+    method = call.data.split("|")[1] # 'normal' or 'tag'
+    data = BC_TEMP[uid]
+    
+    # Target list nikalna
+    targets = db.get_all_users() if data['mode'] == "PM" else db.get_all_groups()
+    total = len(targets)
+    
+    bot.edit_message_text(f"⏳ <b>Broadcasting to {total} {data['mode']}s...</b>", call.message.chat.id, call.message.message_id)
+    
+    success = 0
+    failed = 0
+    
+    for t_id in targets:
+        try:
+            if method == "normal":
+                # Copy message (No forward tag)
+                bot.copy_message(t_id, data['from_chat'], data['msg_id'])
+            else:
+                # Forward message (Preserves original source tag)
+                bot.forward_message(t_id, data['from_chat'], data['msg_id'])
+            success += 1
+        except:
+            failed += 1
+            # Optional: Remove inactive groups/users
+            # if data['mode'] == "Group": db.remove_group(t_id)
+            
+        # Update progress every 20 msgs
+        if (success + failed) % 20 == 0:
+            try: bot.edit_message_text(f"⏳ <b>Progress:</b> {success + failed}/{total}", call.message.chat.id, call.message.message_id)
+            except: pass
+            
+    bot.send_message(
+        call.message.chat.id, 
+        f"✅ <b>Broadcast Finished!</b>\n\n"
+        f"🎯 Mode: {data['mode']} ({method.upper()})\n"
+        f"✔️ Success: {success}\n"
+        f"❌ Failed: {failed}"
+    )
+    del BC_TEMP[uid]
