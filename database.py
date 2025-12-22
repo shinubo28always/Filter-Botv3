@@ -1,11 +1,19 @@
 from pymongo import MongoClient
 import config
+import sys
 
-# MongoDB Connection
-client = MongoClient(config.MONGO_URI)
-db = client['anime_pro_v5'] # Database name
+try:
+    # 5 second ka timeout taaki bot hang na ho
+    client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=5000)
+    # Connection check karne ke liye ping
+    client.admin.command('ping')
+    db = client['anime_pro_v5']
+    print("✅ MongoDB Connected Successfully!")
+except Exception as e:
+    print(f"❌ MongoDB Connection Error: {e}")
+    # Agar DB connect nahi hua toh bot band ho jayega taki aapko error dikhe
+    sys.exit()
 
-# Collections
 users = db['users']
 groups = db['groups']
 filters = db['filters']
