@@ -4,20 +4,16 @@ from bot_instance import bot
 
 def get_anime_info(name):
     try:
-        # Jikan API (MAL) for Best Quality Data
         res = requests.get(f"https://api.jikan.moe/v4/anime?q={name}&limit=1").json()
         if res['data']:
             d = res['data'][0]
-            
-            # Formatting Data
             title = d.get('title', 'N/A')
             episodes = d.get('episodes', 'N/A')
             season = f"{d.get('season', 'N/A')} {d.get('year', '')}".strip()
             genres = ", ".join([g['name'] for g in d.get('genres', [])])
-            # Best Quality Image from MAL
             poster = d['images']['jpg']['large_image_url']
             
-            # --- AAPKA FONT STYLE ---
+            # --- AAPKA MANGI HUI FONT STYLE ---
             caption = (
                 f"<b>🔰 {title} </b>\n"
                 f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
@@ -29,13 +25,8 @@ def get_anime_info(name):
                 f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
             )
             return {"title": title, "poster": poster, "caption": caption}
-    except Exception as e:
-        print(f"MAL Error: {e}")
-        return None
+    except: return None
 
 def send_log(text):
-    """Log channel mein report bhejne ke liye"""
-    try:
-        bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}")
-    except Exception as e:
-        print(f"Log Error: {e}")
+    try: bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}")
+    except: pass
