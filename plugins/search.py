@@ -35,7 +35,7 @@ def search_handler(message):
 def send_final_result(message, data, is_cb=False):
     target = message.chat.id
     
-    # 1. GENERATE LINK (With Error Logging)
+    # 1. GENERATE TEMPORARY INVITE LINK (5 Min Expiry)
     try:
         expire_time = int(time.time()) + 300
         invite = bot.create_chat_invite_link(
@@ -50,19 +50,22 @@ def send_final_result(message, data, is_cb=False):
 
     markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=temp_link))
     
-    # 2. COPY MESSAGE (With Error Logging)
+    # 2. COPY MESSAGE FROM DB CHANNEL
     try:
-        # DB_CHANNEL_ID aur db_mid hamesha integer hone chahiye
+        # NOTE: Humne 'message_effect_id' hata diya hai kyunki copy_message ise support nahi karta
         bot.copy_message(
             chat_id=target,
             from_chat_id=int(config.DB_CHANNEL_ID),
             message_id=int(data['db_mid']),
-            reply_markup=markup,
-            message_effect_id=config.EFFECT_PARTY
+            reply_markup=markup
         )
     except Exception as e:
         send_log(f"❌ Copy Message Error: {e}\nFrom: {config.DB_CHANNEL_ID}\nMID: {data['db_mid']}")
-        bot.send_message(target, "❌ <b>Link Error!</b>\nAdmin ko report karein ya Database channel permissions check karein.")
+        # Agar error aaye toh user ko clear message dikhayein
+        if is_cb:
+            bot.edit_message_text("❌ <b>Result Error!</b>\nPost DB se delete ho chuki hai.", target, message.message_id)
+        else:
+            bot.reply_to(message, "❌ <b>Result Error!</b>\nAdmin ko report karein ya permissions check karein.")
 
     if is_cb:
         try: bot.delete_message(target, message.message_id)
