@@ -1,94 +1,72 @@
-import time
 from bot_instance import bot
 from telebot import types
 import database as db
 import config
+import time
 from thefuzz import process
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
-    # Command check: Agar message / se start ho raha hai toh search skip karo
-    if message.text.startswith("/"): 
+    # Skip if it's a command
+    if message.text.startswith("/"):
         return
+
+    # Debugging: Render Logs mein dikhega
+    print(f"DEBUG: Search received: {message.text}")
 
     uid = message.from_user.id
-    db.add_user(uid)
     
+    # Simple User Add (No await/heavy logic)
+    try:
+        db.add_user(uid)
+    except:
+        print("❌ MongoDB User Add Error")
+
     query = message.text.lower().strip()
     
-    # FSub Check
-    fsub_id = db.get_fsub()
-    if fsub_id:
-        try:
-            status = bot.get_chat_member(fsub_id, uid).status
-            if status not in ['member', 'administrator', 'creator']:
-                link = bot.create_chat_invite_link(fsub_id).invite_link
-                markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✨ Join Channel ✨", url=link))
-                return bot.reply_to(message, "<b>❌ Access Denied!</b>\n\nAapne hamara channel join nahi kiya hai. Pehle join karein phir search karein.", reply_markup=markup)
-        except Exception as e:
-            print(f"FSub Error: {e}")
+    # MongoDB Keywords Fetch
+    try:
+        choices = db.get_all_keywords()
+    except Exception as e:
+        print(f"❌ MongoDB Fetch Error: {e}")
+        return
 
-    # MongoDB se saare keywords nikalna
-    choices = db.get_all_keywords()
     if not choices:
         if message.chat.type == "private":
-            bot.reply_to(message, "😕 <b>Database abhi khali hai.</b> Admin ko anime add karne kahein.")
+            bot.reply_to(message, "📂 Database abhi khali hai.")
         return
 
-    # Fuzzy Matching
+    # Match dhundna
     matches = process.extract(query, choices, limit=3)
-    best_matches = [m for m in matches if m[1] > 70] # 70% threshold
+    best = [m for m in matches if m[1] > 70]
 
-    if not best_matches:
+    if not best:
         if message.chat.type == "private":
-            bot.reply_to(message, "❌ <b>Result Nahi Mila!</b>\nSpelling check karein ya /request karein.")
+            bot.reply_to(message, "❌ Kuch nahi mila.")
         return
 
-    # Direct Result
-    if best_matches[0][1] >= 95:
-        data = db.get_filter(best_matches[0][0])
-        send_res(message, data)
-    else:
-        # Suggestions
-        markup = types.InlineKeyboardMarkup()
-        for b in best_matches:
-            f_data = db.get_filter(b[0])
-            if f_data:
-                markup.add(types.InlineKeyboardButton(f_data['title'], callback_data=f"fuz|{b[0]}"))
-        bot.reply_to(message, "🧐 <b>Kya aap ye dhund rahe hain?</b>", reply_markup=markup)
+    # Sahi match milne par
+    data = db.get_filter(best[0][0])
+    if not data: return
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("fuz|"))
-def handle_fuz_btn(call):
-    key = call.data.split("|")[1]
-    data = db.get_filter(key)
-    if data:
-        send_res(call.message, data, is_cb=True)
-
-def send_res(message, data, is_cb=False):
-    target_chat = message.chat.id
+    # Temporary Link
     try:
-        # Generate 5-min link
-        invite = bot.create_chat_invite_link(
-            data['source_cid'], 
-            expire_date=int(time.time())+300, 
-            member_limit=1
-        )
+        expire = int(time.time()) + 300
+        invite = bot.create_chat_invite_link(data['source_cid'], expire_date=expire, member_limit=1)
         link = invite.invite_link
     except:
         link = config.LINK_ANIME_CHANNEL
 
-    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=link))
-    
+    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch Now", url=link))
+
     try:
         bot.copy_message(
-            chat_id=target_chat,
+            chat_id=message.chat.id,
             from_chat_id=config.DB_CHANNEL_ID,
             message_id=data['db_mid'],
             reply_markup=markup,
             message_effect_id=config.EFFECT_PARTY
         )
     except Exception as e:
-        bot.send_message(target_chat, f"❌ Error: Result DB channel se delete ho chuka hai.\nID: {data['db_mid']}")
-
-    if is_cb:
-        bot.delete_message(target_chat, message.message_id)
+        print(f"❌ Copy Message Error: {e}")
+        bot.reply_to(message, "❌ Link invalid ya DB se deleted hai.")
