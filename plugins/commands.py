@@ -5,53 +5,50 @@ from telebot import types
 import time
 
 @bot.message_handler(commands=['start'])
-def start_cmd(message):
+def start(message):
     bot.send_sticker(message.chat.id, config.STICKER_ID)
-    time.sleep(1)
     markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("📢 Updates", url=config.LINK_ANIME_CHANNEL))
-    bot.send_message(message.chat.id, "🎬 <b>Welcome!</b>\nType anime name to search or use /help.", reply_markup=markup, message_effect_id=config.EFFECT_FIRE)
+    bot.send_message(message.chat.id, "🎬 <b>Bot Online!</b>\nSearch anime below.", reply_markup=markup, message_effect_id=config.EFFECT_FIRE)
 
-@bot.message_handler(commands=['help'])
-def help_cmd(message):
-    txt = (
-        "📖 <b>Bot Commands:</b>\n\n"
-        "• <code>/start</code> - Check bot alive\n"
-        "• <code>/ping</code> - Check speed\n"
-        "• <code>/request [name]</code> - Request anime\n"
-        "• <code>/filters</code> - List all filters (Admin)\n"
-        "• <code>/stats</code> - Bot stats (Admin)\n"
-        "• <code>/broadcast</code> - Send msg to all (Admin)"
-    )
-    bot.reply_to(message, txt)
-
-@bot.message_handler(commands=['ping'])
-def ping_cmd(message):
-    start = time.time()
-    msg = bot.reply_to(message, "📶")
-    ms = round((time.time() - start) * 1000)
-    bot.edit_message_text(f"🚀 <b>Speed:</b> <code>{ms}ms</code>", message.chat.id, msg.message_id)
-
-@bot.message_handler(commands=['admins'])
-def list_admins_cmd(message):
+@bot.message_handler(commands=['filters'])
+def list_fs(message):
     if not db.is_admin(message.from_user.id): return
-    adms = db.get_all_admins()
-    txt = "👮 <b>Admins List:</b>\n\n" + "\n".join([f"• <code>{a}</code>" for a in adms])
-    bot.reply_to(message, txt)
+    fs = db.get_all_filters_list()
+    if not fs: return bot.reply_to(message, "No filters.")
+    txt = "📂 <b>Filters:</b>\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
+    bot.reply_to(message, txt[:4000])
 
-@bot.message_handler(commands=['add_admin'])
-def add_adm(message):
-    if str(message.from_user.id) != str(config.OWNER_ID): return
-    try:
-        uid = message.text.split()[1]
-        db.add_admin(uid)
-        bot.reply_to(message, f"✅ Admin Added: <code>{uid}</code>")
-    except: bot.reply_to(message, "Usage: /add_admin ID")
+@bot.message_handler(commands=['del_filter'])
+def delete_fs(message):
+    if not db.is_admin(message.from_user.id): return
+    args = message.text.split()
+    if len(args) < 2: return bot.reply_to(message, "Usage: /del_filter name/all")
+    
+    target = args[1].lower()
+    if target == "all":
+        if db.get_filter("all"): 
+            db.delete_filter("all")
+            bot.reply_to(message, "Deleted filter named 'all'.")
+        else:
+            markup = types.InlineKeyboardMarkup().add(
+                types.InlineKeyboardButton("Confirm Delete All", callback_data="conf_all"),
+                types.InlineKeyboardButton("Cancel", callback_data="cancel")
+            )
+            bot.reply_to(message, "⚠️ <b>Warning:</b> Delete EVERYTHING?", reply_markup=markup)
+    else:
+        if db.delete_filter(target): bot.reply_to(message, f"Deleted {target}")
+        else: bot.reply_to(message, "Not found.")
 
-@bot.message_handler(commands=['del_admin'])
-def del_adm(message):
-    if str(message.from_user.id) != str(config.OWNER_ID): return
-    try:
-        uid = message.text.split()[1]
-        db.del_admin(uid)
-        bot.reply_to(message, "🗑 Admin Removed.")
-    except: bot.reply_to(message, "Usage: /del_admin ID")
+@bot.callback_query_handler(func=lambda call: call.data in ["conf_all", "cancel"])
+def handle_del_all(call):
+    if call.data == "conf_all":
+        db.delete_all_filters()
+        bot.edit_message_text("🗑 All filters cleared.", call.message.chat.id, call.message.message_id)
+    else: bot.delete_message(call.message.chat.id, call.message.message_id)
+
+@bot.message_handler(commands=['stats'])
+def stats(message):
+    if not db.is_admin(message.from_user.id): return
+    u = len(db.get_all_users())
+    f = len(db.get_all_filters_list())
+    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: {u}\nFilters: {f}")
