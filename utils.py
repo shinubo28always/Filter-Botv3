@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support! 
 import requests
 import config
 from bot_instance import bot
@@ -43,3 +45,5 @@ def send_log(text):
         bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}", parse_mode='HTML')
     except Exception as e:
         print(f"Log Error: {e}")
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
