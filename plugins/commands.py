@@ -1,71 +1,62 @@
-import time
-import threading
 from bot_instance import bot
-import database as db
-import config
+import config, database as db, time
 from telebot import types
 
-BC_TEMP = {}
+@bot.message_handler(commands=['start'])
+def start(m):
+    bot.send_sticker(m.chat.id, config.STICKER_ID)
+    bot.send_message(m.chat.id, "🎬 <b>Bot Alive!</b>", message_effect_id=config.EFFECT_FIRE)
 
-def start_broadcasting(targets, data, method, admin_chat_id, status_msg_id):
-    success = 0
-    failed = 0
-    total = len(targets)
+@bot.message_handler(commands=['ping'])
+def ping(m):
+    s = time.time()
+    msg = bot.reply_to(m, "📶")
+    bot.edit_message_text(f"🚀 {round((time.time()-s)*1000)}ms", m.chat.id, msg.message_id)
 
-    for t_id in targets:
-        try:
-            if method == "normal":
-                bot.copy_message(t_id, data['from_chat'], data['msg_id'])
-            else:
-                bot.forward_message(t_id, data['from_chat'], data['msg_id'])
-            success += 1
-        except:
-            failed += 1
-        
-        # Har 20 messages ke baad status update (Bot hang nahi hoga)
-        if (success + failed) % 20 == 0:
-            try:
-                bot.edit_message_text(f"⏳ <b>Broadcasting...</b>\nProgress: {success + failed}/{total}", admin_chat_id, status_msg_id)
-            except: pass
+@bot.message_handler(commands=['stats'])
+def stats(m):
+    if not db.is_admin(m.from_user.id): return
+    u, f = len(db.get_all_users()), len(db.get_all_filters_list())
+    bot.reply_to(m, f"📊 <b>Stats:</b>\nUsers: {u}\nFilters: {f}")
 
-    bot.send_message(
-        admin_chat_id, 
-        f"✅ <b>Broadcast Finished!</b>\n\n🎯 Mode: {data['mode']}\n✔️ Success: {success}\n❌ Failed: {failed}"
-    )
+@bot.message_handler(commands=['filters'])
+def list_f(m):
+    if not db.is_admin(m.from_user.id): return
+    fs = db.get_all_filters_list()
+    txt = "📂 <b>Filters:</b>\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
+    bot.reply_to(m, txt[:4000])
 
-@bot.message_handler(commands=['broadcast', 'gbroadcast'])
-def broadcast_init(message):
-    if not db.is_admin(message.from_user.id): return
-    if not message.reply_to_message:
-        return bot.reply_to(message, "⚠️ Reply to a message to broadcast.")
-    
-    mode = "PM" if message.text.startswith("/broadcast") else "Group"
-    uid = message.from_user.id
-    
-    BC_TEMP[uid] = {
-        "msg_id": message.reply_to_message.message_id,
-        "from_chat": message.chat.id,
-        "mode": mode
-    }
-    
-    markup = types.InlineKeyboardMarkup()
-    markup.row(
-        types.InlineKeyboardButton("🚫 Normal", callback_data="bc_mode|normal"),
-        types.InlineKeyboardButton("🏷️ With Tag", callback_data="bc_mode|tag")
-    )
-    bot.reply_to(message, f"🚀 <b>Broadcast Setup ({mode})</b>", reply_markup=markup)
+@bot.message_handler(commands=['del_filter'])
+def del_f(m):
+    if not db.is_admin(m.from_user.id): return
+    try:
+        t = m.text.split()[1].lower()
+        if t == "all":
+            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("Confirm All", callback_data="conf_all"))
+            return bot.reply_to(m, "⚠️ Delete All?", reply_markup=markup)
+        if db.delete_filter(t): bot.reply_to(m, "Deleted.")
+        else: bot.reply_to(m, "Not found.")
+    except: pass
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith("bc_mode|"))
-def handle_bc_callback(call):
-    uid = call.from_user.id
-    method = call.data.split("|")[1]
-    data = BC_TEMP.get(uid)
-    
-    if not data: return
-    
-    targets = db.get_all_users() if data['mode'] == "PM" else db.get_all_groups()
-    bot.edit_message_text(f"⏳ Broadcast started for {len(targets)} targets...", call.message.chat.id, call.message.message_id)
-    
-    # --- THREADING START (Background mein broadcast chalega) ---
-    threading.Thread(target=start_broadcasting, args=(targets, data, method, call.message.chat.id, call.message.message_id)).start()
-    del BC_TEMP[uid]
+@bot.callback_query_handler(func=lambda c: c.data == "conf_all")
+def conf_all(c):
+    db.delete_all_filters(); bot.edit_message_text("🗑 All Deleted.", c.message.chat.id, c.message.message_id)
+
+@bot.message_handler(commands=['add_admin'])
+def add_adm(m):
+    if str(m.from_user.id) != str(config.OWNER_ID): return
+    try:
+        u = m.text.split()[1]; db.add_admin(u); bot.reply_to(m, "Admin Added.")
+    except: pass
+
+@bot.message_handler(commands=['del_admin'])
+def del_adm(m):
+    if str(m.from_user.id) != str(config.OWNER_ID): return
+    try:
+        u = m.text.split()[1]; db.del_admin(u); bot.reply_to(m, "Admin Removed.")
+    except: pass
+
+@bot.message_handler(commands=['admins'])
+def list_adms(m):
+    if not db.is_admin(m.from_user.id): return
+    ad = db.get_all_admins(); bot.reply_to(m, "\n".join(ad))
