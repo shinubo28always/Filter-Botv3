@@ -2,7 +2,6 @@ from pymongo import MongoClient
 import config
 import sys
 
-# DATABASE NAME FIXED
 DB_NAME = "AniReal_Filter_Bot"
 
 try:
@@ -79,9 +78,19 @@ def get_all_keywords():
 def get_all_filters_list():
     return list(filters.find({}, {"keyword": 1, "title": 1}))
 
-# --- MULTI-FSUB LOGIC ---
-def add_fsub_chnl(chat_id, title):
-    fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": "normal"}}, upsert=True)
+# --- UPGRADED FSUB LOGIC ---
+def add_fsub_chnl(chat_id, title, mode):
+    fsub_col.update_one(
+        {"_id": str(chat_id)}, 
+        {"$set": {"title": title, "mode": mode}}, 
+        upsert=True
+    )
+
+def update_fsub_mode(chat_id, mode):
+    fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": mode}})
+
+def get_fsub_info(chat_id):
+    return fsub_col.find_one({"_id": str(chat_id)})
 
 def get_all_fsub():
     return list(fsub_col.find())
@@ -91,13 +100,6 @@ def del_fsub_chnl(chat_id):
 
 def del_all_fsub_chnls():
     return fsub_col.delete_many({}).deleted_count
-
-def toggle_fsub_mode(chat_id):
-    curr = fsub_col.find_one({"_id": str(chat_id)})
-    if not curr: return None
-    new_mode = "request" if curr['mode'] == "normal" else "normal"
-    fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": new_mode}})
-    return new_mode
 
 # --- REQUEST LOGIC ---
 def save_request(uid, name, query):
