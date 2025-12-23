@@ -1,28 +1,36 @@
 from pymongo import MongoClient
 import config
 import sys
+import time
 
-# DATABASE NAME FIXED
+# --- DATABASE CONFIGURATION ---
 DB_NAME = "AniReal_Filter_Bot"
 
 try:
+    # 10s timeout taaki Render par bot stuck na ho
     client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000)
     db = client[DB_NAME]
     db.command('ping')
-    print(f"✅ MongoDB Connected to: {DB_NAME}")
+    print(f"✅ MongoDB Connected: {DB_NAME}")
 except Exception as e:
-    print(f"❌ MongoDB Error: {e}")
+    print(f"❌ MongoDB Connection Error: {e}")
     sys.exit(1)
 
+# Collections
 users = db['users']
 groups = db['groups']
 filters = db['filters']
 admins = db['admins']
 settings = db['settings']
+requests_db = db['requests']
 fsub_col = db['fsub_channels']
 
-# --- ADMIN LOGIC ---
+# ==========================================
+# 👮 ADMIN & USER LOGIC
+# ==========================================
+
 def is_admin(uid):
+    """Owner ya Database Admin check karein"""
     if str(uid) == str(config.OWNER_ID): return True
     return admins.find_one({"_id": str(uid)}) is not None
 
@@ -35,7 +43,6 @@ def del_admin(uid):
 def get_all_admins():
     return [a['_id'] for a in admins.find()]
 
-# --- USER & GROUP LOGIC ---
 def add_user(uid):
     users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 
@@ -48,6 +55,10 @@ def get_all_users():
 def del_user(uid):
     users.delete_one({"_id": str(uid)})
 
+# ==========================================
+# 🏘️ GROUP TRACKING
+# ==========================================
+
 def add_group(chat_id, title):
     groups.update_one({"_id": str(chat_id)}, {"$set": {"title": title}}, upsert=True)
 
@@ -57,7 +68,10 @@ def del_group(chat_id):
 def get_all_groups():
     return [g['_id'] for g in groups.find()]
 
-# --- FILTER LOGIC ---
+# ==========================================
+# 📂 FILTER LOGIC
+# ==========================================
+
 def add_filter(keyword, data):
     payload = {
         "title": data['title'],
@@ -81,7 +95,10 @@ def get_all_keywords():
 def get_all_filters_list():
     return list(filters.find({}, {"keyword": 1, "title": 1}))
 
-# --- MULTI-FSUB LOGIC ---
+# ==========================================
+# 📢 MULTI-FSUB LOGIC
+# ==========================================
+
 def add_fsub_chnl(chat_id, title, mode):
     fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": mode}}, upsert=True)
 
@@ -106,3 +123,10 @@ def toggle_fsub_mode(chat_id):
     new_mode = "request" if curr['mode'] == "normal" else "normal"
     fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": new_mode}})
     return new_mode
+
+# ==========================================
+# 📩 REQUEST LOGIC
+# ==========================================
+
+def save_request(uid, name, query):
+    requests_db.insert_one({"uid": str(uid), "name": name, "query": query, "time": time.ctime()})
