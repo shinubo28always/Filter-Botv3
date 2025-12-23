@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import time
 import html
 from bot_instance import bot
@@ -11,7 +13,7 @@ def start_handler(message):
     chat_id = message.chat.id
     db.add_user(uid)
     
-    # --- 1. HANDLE DEEP LINKING (GC Redirect Case) ---
+    # --- HANDLE DEEP LINKING (GC Redirect Case) ---
     if message.chat.type == "private" and len(message.text.split()) > 1:
         param = message.text.split()[1]
         if param == "request":
@@ -19,7 +21,7 @@ def start_handler(message):
             initiate_request_flow(uid)
             return
 
-    # --- 2. COMMON STICKER ANIMATION ---
+    # --- COMMON STICKER ANIMATION ---
     try:
         stk = bot.send_sticker(chat_id, config.STICKER_ID)
         time.sleep(1.2)
@@ -27,7 +29,7 @@ def start_handler(message):
     except:
         pass
 
-    # --- 3. PM (PRIVATE CHAT) START MSG ---
+    # --- PM (PRIVATE CHAT) START MSG ---
     if message.chat.type == "private":
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
@@ -47,7 +49,7 @@ def start_handler(message):
         except:
             bot.send_message(chat_id, pm_text, reply_markup=markup, message_effect_id=config.EFFECT_FIRE)
 
-    # --- 4. GROUP START MSG (REPLY MODE - NO EFFECTS) ---
+    # --- GROUP START MSG (REPLY MODE - NO EFFECTS) ---
     else:
         markup = types.InlineKeyboardMarkup()
         markup.add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
@@ -81,6 +83,8 @@ def list_filters(message):
     if not fs: return bot.reply_to(message, "📂 Database Khali Hai!")
     txt = "📂 <b>Available Filters:</b>\n\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
     bot.reply_to(message, txt[:4000])
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 
 @bot.message_handler(commands=['del_filter'])
 def delete_filter_cmd(message):
@@ -94,3 +98,6 @@ def delete_filter_cmd(message):
     else:
         if db.delete_filter(target): bot.reply_to(message, f"🗑️ Filter <code>{target}</code> deleted.")
         else: bot.reply_to(message, "❌ Not found.")
+
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
