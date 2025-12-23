@@ -16,6 +16,7 @@ import plugins.commands
 import plugins.request
 import plugins.broadcast
 import plugins.auth
+import plugins.admins
 import plugins.setup
 import plugins.search
 
