@@ -11,8 +11,8 @@ def get_config(key, default=None):
         "API_TOKEN": "8287122331:AAGJAPF3cjJmV_am7zZyAAE6xwvPOIPUq4o", 
         "OWNER_ID": "", 
         "MONGO_URI": "",
-        "DB_CHANNEL_ID": "",
-        "LOG_CHANNEL_ID": ""
+        "DB_CHANNEL_ID": "-1002511179462",
+        "LOG_CHANNEL_ID": "-1002511179462"
     }
     val = hardcoded.get(key) or os.getenv(key)
     return val if val else default
