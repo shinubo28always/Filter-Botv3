@@ -9,19 +9,21 @@ def handle_membership_security(message):
     new = message.new_chat_member
     chat = message.chat
     
-    # Kisne bot ko add kiya (Inviter ID)
+    # Inviter detect karna
     inviter_id = message.from_user.id if message.from_user else None
 
     # --- CHANNEL PROTECTION ---
     if chat.type == "channel":
-        # Jab bot Administrator banaya jaye
         if new.status == "administrator":
-            # Check permission: Kya add karne wala Admin ya Owner hai?
+            # Security Check
             if inviter_id and db.is_admin(inviter_id):
+                # Channel title ko clean karna
                 safe_title = html.escape(chat.title)
                 
+                # IMPORTANT: Callback data mein sirf ID bhej rahe hain (limit check ke liye)
+                # Format: setup|chat_id
                 markup = types.InlineKeyboardMarkup().add(
-                    types.InlineKeyboardButton("➕ Add Filter", callback_data=f"setup|{chat.id}|{safe_title}")
+                    types.InlineKeyboardButton("➕ Add Filter", callback_data=f"setup|{chat.id}")
                 )
                 
                 txt = (
@@ -32,24 +34,23 @@ def handle_membership_security(message):
                 )
                 
                 try:
-                    # Pehle inviter ko bhejte hain (Jisne add kiya)
                     bot.send_message(inviter_id, txt, reply_markup=markup, parse_mode='HTML')
                 except:
-                    # Fallback: Agar inviter ko nahi gaya, toh Main Owner ko bhejte hain
+                    # Fallback to Owner
                     try:
                         bot.send_message(
                             config.OWNER_ID, 
-                            f"📢 <b>Channel Authorized by Admin {inviter_id}:</b>\n{safe_title}", 
+                            f"📢 <b>Authorized:</b> {safe_title}\nID: <code>{chat.id}</code>", 
                             reply_markup=markup, 
                             parse_mode='HTML'
                         )
                     except: pass
             else:
-                # Unauthorized user: Auto Leave
+                # Unauthorized user: Leave
                 try: bot.leave_chat(chat.id)
                 except: pass
 
-    # --- GROUP LOGIC ---
+    # --- GROUP TRACKING ---
     elif chat.type in ["group", "supergroup"]:
         if new.status in ["administrator", "member"]:
             db.add_group(chat.id, chat.title)
@@ -61,4 +62,4 @@ def on_join_group(message):
     for user in message.new_chat_members:
         if user.id == bot.get_me().id:
             db.add_group(message.chat.id, message.chat.title)
-            bot.send_message(message.chat.id, "👋 <b>Hello Everyone!</b>\nAnime dhundne ke liye anime ka naam likhein.")
+            bot.send_message(message.chat.id, "👋 <b>Bot Active!</b>\nType anime name to search.")
