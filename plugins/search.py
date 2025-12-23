@@ -21,9 +21,8 @@ def search_handler(message):
                 status = bot.get_chat_member(f['_id'], uid).status
                 if status in ['left', 'kicked']:
                     is_req = f['mode'] == "request"
-                    expiry = 300 if is_req else 120 # 5m vs 2m
+                    expiry = 300 if is_req else 120 
                     
-                    # FSub Link generation
                     invite = bot.create_chat_invite_link(
                         chat_id=int(f['_id']),
                         expire_date=int(time.time()) + expiry,
@@ -53,12 +52,10 @@ def search_handler(message):
         for b in best_matches:
             f_data = db.get_filter(b[0])
             if f_data:
-                # Suggestion with User Lock
                 cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
                 markup.add(types.InlineKeyboardButton(f"🎬 {f_data['title']}", callback_data=cb))
         bot.reply_to(message, f"🧐 <b>Hey {message.from_user.first_name}, did you mean:</b>", reply_markup=markup)
 
-# --- CALLBACK HANDLER FOR SUGGESTIONS ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fuz|"))
 def handle_fuz_click(call):
     _, key, mid, ouid = call.data.split("|")
@@ -71,16 +68,13 @@ def handle_fuz_click(call):
         except: pass
         send_final_result(call.message, data, int(mid))
 
-# --- FINAL RESULT DELIVERY (WITH 5-MIN EXPIRY) ---
 def send_final_result(message, data, r_mid):
     target_chat = message.chat.id
     
-    # 🕒 5-MINUTE AUTO EXPIRY LOGIC
+    # 🕒 5-MINUTE AUTO EXPIRY LINK
     try:
         source_id = int(data['source_cid'])
-        expire_at = int(time.time()) + 300 # Current time + 5 minutes
-        
-        # Link sirf ek baar use ho sake (member_limit=1) anti-copyright ke liye best hai
+        expire_at = int(time.time()) + 300 
         invite = bot.create_chat_invite_link(
             chat_id=source_id,
             expire_date=expire_at,
@@ -88,22 +82,21 @@ def send_final_result(message, data, r_mid):
         )
         final_link = invite.invite_link
     except Exception as e:
-        print(f"Invite Gen Error: {e}")
-        final_link = config.LINK_ANIME_CHANNEL # Fallback
+        final_link = config.LINK_ANIME_CHANNEL
 
     markup = types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("🎬 Watch / Download", url=final_link)
+        types.InlineKeyboardButton("🎬 Watch & Download", url=final_link)
     )
     
-    # Copy from DB Channel (Permanent Post)
+    # 🎬 COPY FROM DB CHANNEL (SAFE & EFFECT-FREE)
     try:
+        # message_effect_id puri tarah hata diya hai kyunki copy_message ise support nahi karta
         bot.copy_message(
             chat_id=target_chat,
             from_chat_id=int(config.DB_CHANNEL_ID),
             message_id=int(data['db_mid']),
             reply_markup=markup,
-            reply_to_message_id=r_mid,
-            message_effect_id=config.EFFECT_PARTY if message.chat.type == "private" else None
+            reply_to_message_id=r_mid
         )
     except Exception as e:
         send_log(f"❌ Result Copy Error: {e}\nMID: {data['db_mid']}")
