@@ -1,9 +1,11 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 from bot_instance import bot
 import database as db
 from telebot import types
 import config
 
-# --- 1. ADD FSUB: SELECT MODE FIRST ---
+# --- ADD FSUB: SELECT MODE FIRST ---
 @bot.message_handler(commands=['add_fsub'])
 def add_fsub_start(message):
     if not db.is_admin(message.from_user.id): return
@@ -31,7 +33,7 @@ def save_new_fsub(call):
     emoji = "🔴 Normal" if mode == "normal" else "🟢 Request"
     bot.edit_message_text(f"✅ <b>FSub Added Successfully!</b>\n\nChannel: <b>{title}</b>\nMode: <b>{emoji}</b>", call.message.chat.id, call.message.message_id)
 
-# --- 2. FSUB LIST: SINGLE BUTTON STYLE ---
+# --- FSUB LIST: SINGLE BUTTON STYLE ---
 @bot.message_handler(commands=['fsub'])
 def list_fsub_handler(message):
     if not db.is_admin(message.from_user.id): return
@@ -54,7 +56,7 @@ def send_main_menu(chat_id, edit_mid=None):
     if edit_mid: bot.edit_message_text(txt, chat_id, edit_mid, reply_markup=markup)
     else: bot.send_message(chat_id, txt, reply_markup=markup)
 
-# --- 3. MANAGE CHANNEL: CHANGE MODE OR DELETE ---
+# --- MANAGE CHANNEL: CHANGE MODE OR DELETE ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_manage|"))
 def manage_channel_ui(call):
     cid = call.data.split("|")[1]
@@ -120,3 +122,6 @@ def delete_callbacks(call):
         import time
         time.sleep(1.5)
         send_main_menu(call.message.chat.id, edit_mid=call.message.message_id)
+
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
