@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 from bot_instance import bot
 import config
 import database as db
@@ -94,7 +96,6 @@ def list_admins_handler(message):
         if str(aid) == str(config.OWNER_ID): continue
         # Skip if ID is not numeric (Cleans up your old 'v', 'u' entries)
         if not str(aid).isdigit(): continue
-        
         try:
             user = bot.get_chat(aid)
             name = html.escape(user.first_name)
@@ -104,3 +105,8 @@ def list_admins_handler(message):
         count += 1
             
     bot.edit_message_text(txt, message.chat.id, status_msg.message_id)
+
+
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
+# Join & Support Us! @DogeshBhai_Pure_Bot
