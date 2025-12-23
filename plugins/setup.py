@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 from bot_instance import bot
 from telebot import types
 import utils, database as db, config, html
@@ -7,10 +9,8 @@ TEMP_SETUP = {}
 @bot.callback_query_handler(func=lambda call: call.data.startswith("setup"))
 def init_setup(call):
     uid = call.from_user.id
-    # Ab sirf ID nikal rahe hain
     try:
         cid = int(call.data.split("|")[1])
-        # Channel ka naam live fetch karna taaki symbols ka chakkar khatam ho jaye
         chat_info = bot.get_chat(cid)
         chat_title = chat_info.title
     except:
@@ -43,7 +43,6 @@ def get_name(message):
     
     TEMP_SETUP[uid].update(info)
     markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✅ Confirm & Post", callback_data="conf_save"))
-    # Utils se aaya caption already safe hai
     p = bot.send_photo(uid, info['poster'], caption=info['caption'], reply_markup=markup, parse_mode='HTML')
     TEMP_SETUP[uid]['m2'] = p.message_id
 
@@ -80,3 +79,5 @@ def finalize(message):
     
     bot.send_message(uid, f"<b>Filter Has been Added...✔️</b>\n\nAnime: <code>{html.escape(data['title'])}</code>", parse_mode='HTML')
     del TEMP_SETUP[uid]
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
