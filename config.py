@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import os
 from dotenv import load_dotenv
 
@@ -28,3 +30,5 @@ EFFECT_PARTY = "5046509860389126442"
 START_IMG = "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg"
 
 LINK_ANIME_CHANNEL = "https://t.me/DogeshBhai_Pure_Bot"
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
