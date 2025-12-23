@@ -13,7 +13,6 @@ def get_anime_info(name):
             genres = ", ".join([g['name'] for g in d.get('genres', [])])
             poster = d['images']['jpg']['large_image_url']
             
-            # --- AAPKA MANGI HUI FONT STYLE ---
             caption = (
                 f"<b>🔰 {title} </b>\n"
                 f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
