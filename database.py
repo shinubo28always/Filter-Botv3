@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 from pymongo import MongoClient
 import config
 import sys
@@ -130,3 +132,5 @@ def toggle_fsub_mode(chat_id):
 
 def save_request(uid, name, query):
     requests_db.insert_one({"uid": str(uid), "name": name, "query": query, "time": time.ctime()})
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
