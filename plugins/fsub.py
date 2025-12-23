@@ -47,7 +47,7 @@ def add_fsub_cmd(message):
         chat = bot.get_chat(target_id)
         db.add_fsub_chnl(target_id, chat.title)
         bot.reply_to(message, f"✅ <b>FSub Added!</b>\n{chat.title}\nMode: Normal (🔴)")
-    exceptException as e:
+    except Exception as e:
         bot.reply_to(message, f"❌ Error: ID galat hai ya bot admin nahi hai.\n{e}")
 
 @bot.message_handler(commands=['del_fsub'])
