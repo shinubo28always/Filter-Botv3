@@ -9,15 +9,15 @@ def handle_membership_security(message):
     new = message.new_chat_member
     chat = message.chat
     
-    # Inviter ID detect karna
+    # Kisne bot ko add kiya (Inviter ID)
     inviter_id = message.from_user.id if message.from_user else None
 
-    # --- CHANNEL LOGIC (STRICT) ---
+    # --- CHANNEL PROTECTION ---
     if chat.type == "channel":
+        # Jab bot Administrator banaya jaye
         if new.status == "administrator":
-            # Check permission: Kya add karne wala Admin/Owner hai?
+            # Check permission: Kya add karne wala Admin ya Owner hai?
             if inviter_id and db.is_admin(inviter_id):
-                # Channel title ko escape karna zaroori hai taaki HTML na tute
                 safe_title = html.escape(chat.title)
                 
                 markup = types.InlineKeyboardMarkup().add(
@@ -32,27 +32,24 @@ def handle_membership_security(message):
                 )
                 
                 try:
-                    # Pehle inviter ko bhejte hain
+                    # Pehle inviter ko bhejte hain (Jisne add kiya)
                     bot.send_message(inviter_id, txt, reply_markup=markup, parse_mode='HTML')
                 except:
-                    # Fallback: Agar inviter ko nahi gaya, toh Owner ko bhejte hain
+                    # Fallback: Agar inviter ko nahi gaya, toh Main Owner ko bhejte hain
                     try:
                         bot.send_message(
                             config.OWNER_ID, 
-                            f"📢 <b>Authorized (via Admin {inviter_id}):</b>\n{safe_title}", 
+                            f"📢 <b>Channel Authorized by Admin {inviter_id}:</b>\n{safe_title}", 
                             reply_markup=markup, 
                             parse_mode='HTML'
                         )
-                    except Exception as e:
-                        print(f"CRITICAL ERROR: Could not send auth msg: {e}")
+                    except: pass
             else:
-                # UNAUTHORIZED: Bina msg leave karein
-                try:
-                    bot.leave_chat(chat.id)
-                except:
-                    pass
+                # Unauthorized user: Auto Leave
+                try: bot.leave_chat(chat.id)
+                except: pass
 
-    # --- GROUP LOGIC (PUBLIC/PRIVATE) ---
+    # --- GROUP LOGIC ---
     elif chat.type in ["group", "supergroup"]:
         if new.status in ["administrator", "member"]:
             db.add_group(chat.id, chat.title)
