@@ -15,6 +15,7 @@ from utils import send_log
 import plugins.commands
 import plugins.request
 import plugins.broadcast
+import plugins.fsub
 import plugins.auth
 import plugins.admins
 import plugins.setup
