@@ -6,7 +6,7 @@ load_dotenv()
 def get_config(key, default=None):
     # Priority: 1. Hardcoded, 2. .env, 3. Host Env
     hardcoded = {
-        "API_TOKEN": "8287122331:AAGcVB2RAek3bnvMAfMkG3MlbH5n7_ScKPU", 
+        "API_TOKEN": "8287122331:AAGJAPF3cjJmV_am7zZyAAE6xwvPOIPUq4o", 
         "OWNER_ID": "", 
         "MONGO_URI": "",
         "DB_CHANNEL_ID": "",
