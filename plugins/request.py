@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 from bot_instance import bot
 import config
 import database as db
@@ -8,7 +10,7 @@ import html
 def request_command(message):
     uid = message.from_user.id
     
-    # 1. GC REDIRECT: Redirect to PM without needing /request again
+    # GC REDIRECT: Redirect to PM without needing /request again
     if message.chat.type != "private":
         markup = types.InlineKeyboardMarkup()
         bot_username = bot.get_me().username
@@ -21,10 +23,11 @@ def request_command(message):
             reply_markup=markup
         )
     
-    # 2. PM DIRECT COMMAND: Send instruction manual
+    # PM DIRECT COMMAND: Send instruction manual
     args = message.text.split(maxsplit=1)
     if len(args) == 1:
-        # User just typed /request in PM
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
         instruction = (
             "⚠️ <b>Anime Request Rules:</b>\n\n"
             "Request karne ke liye command ke saath anime ka naam likhein.\n"
@@ -32,7 +35,7 @@ def request_command(message):
         )
         return bot.reply_to(message, instruction)
     
-    # 3. PM WITH ARGS: Process request
+    # PM WITH ARGS: Process request
     process_request_text(message, args[1])
 
 def initiate_request_flow(uid):
@@ -81,3 +84,4 @@ def deliver_reply_to_user(message, target_uid, user_msg_id):
     except:
         bot.send_message(target_uid, f"<blockquote><b>Admin Reply:</b>\n\n{message.text}</blockquote>")
         bot.reply_to(message, "✅ Original msg missing, normal PM sent.")
+# Join & Support Us! @DogeshBhai_Pure_Bot
