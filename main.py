@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import os
 import sys
 import threading
@@ -58,3 +60,5 @@ if __name__ == "__main__":
         except Exception as e:
             print(f"⚠️ Polling Error: {e}")
             time.sleep(10) # Conflict hone par 10s wait
+
+# Join & Support Us! @DogeshBhai_Pure_Bot!
