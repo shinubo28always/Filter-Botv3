@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import time, threading
 from bot_instance import bot
 from telebot import apihelper, types
@@ -24,6 +26,9 @@ def run_bc(targets, mid, f_chat, mode, admin_id, s_mid):
     res = f"<b><u>Broadcast Completed ({mode})</u></b>\n\nTotal: {total}\nSuccessful: {done}\nBlocked: {blocked}\nDeleted: {deleted}"
     bot.send_message(admin_id, res)
 
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
+
 @bot.message_handler(commands=['broadcast', 'gbroadcast'])
 def bc_handler(message):
     if not db.is_admin(message.from_user.id): return
@@ -34,3 +39,5 @@ def bc_handler(message):
     
     s = bot.reply_to(message, "<i>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴘʀᴏᴄᴇꜱꜱɪɴɢ....</i>")
     threading.Thread(target=run_bc, args=(targets, message.reply_to_message.message_id, message.chat.id, mode, message.chat.id, s.message_id)).start()
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
