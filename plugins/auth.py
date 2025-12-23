@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import html
 from bot_instance import bot
 import database as db
@@ -9,7 +11,7 @@ def handle_membership_security(message):
     new = message.new_chat_member
     chat = message.chat
     
-    # Inviter detect karna
+    # Inviter detecting 
     inviter_id = message.from_user.id if message.from_user else None
 
     # --- CHANNEL PROTECTION ---
@@ -20,7 +22,6 @@ def handle_membership_security(message):
                 # Channel title ko clean karna
                 safe_title = html.escape(chat.title)
                 
-                # IMPORTANT: Callback data mein sirf ID bhej rahe hain (limit check ke liye)
                 # Format: setup|chat_id
                 markup = types.InlineKeyboardMarkup().add(
                     types.InlineKeyboardButton("➕ Add Filter", callback_data=f"setup|{chat.id}")
@@ -50,6 +51,9 @@ def handle_membership_security(message):
                 try: bot.leave_chat(chat.id)
                 except: pass
 
+ # Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+ # This Bot Created By: @AniReal_Support!
+
     # --- GROUP TRACKING ---
     elif chat.type in ["group", "supergroup"]:
         if new.status in ["administrator", "member"]:
@@ -63,3 +67,6 @@ def on_join_group(message):
         if user.id == bot.get_me().id:
             db.add_group(message.chat.id, message.chat.title)
             bot.send_message(message.chat.id, "👋 <b>Bot Active!</b>\nType anime name to search.")
+
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
