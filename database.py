@@ -4,7 +4,7 @@ import sys
 
 try:
     client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000)
-    db = client['AnimeFilterPro_V6']
+    db = client['AniReal_Filter_Bot']
     db.command('ping')
 except Exception as e:
     print(f"❌ MongoDB Error: {e}")
