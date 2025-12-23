@@ -25,5 +25,6 @@ LOG_CHANNEL_ID = int(get_config("LOG_CHANNEL_ID")) if get_config("LOG_CHANNEL_ID
 STICKER_ID = "CAACAgUAAxkBAAEP4flpKC6Ozwtd25givMwrN3zMcnLeFQACuBYAArKmaFa__rW3azdtFjYE"
 EFFECT_FIRE = "5104841245755180586"
 EFFECT_PARTY = "5046509860389126442"
+START_IMG = "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg"
 
 LINK_ANIME_CHANNEL = "https://t.me/DogeshBhai_Pure_Bot"
