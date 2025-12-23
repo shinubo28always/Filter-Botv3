@@ -1,3 +1,5 @@
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 import time
 import config
 import database as db
@@ -35,7 +37,7 @@ def search_handler(message):
                     return bot.reply_to(message, f"<b>⚠️ Access Denied!</b>\nJoin <b>{f['title']}</b> to use me.", reply_markup=markup)
             except: continue
 
-    # --- 2. SEARCH LOGIC ---
+    # --- SEARCH LOGIC ---
     query = message.text.lower().strip()
     choices = db.get_all_keywords()
     if not choices: return
@@ -87,10 +89,10 @@ def send_final_result(message, data, r_mid):
     markup = types.InlineKeyboardMarkup().add(
         types.InlineKeyboardButton("🎬 Watch & Download", url=final_link)
     )
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
     
-    # 🎬 COPY FROM DB CHANNEL (SAFE & EFFECT-FREE)
     try:
-        # message_effect_id puri tarah hata diya hai kyunki copy_message ise support nahi karta
         bot.copy_message(
             chat_id=target_chat,
             from_chat_id=int(config.DB_CHANNEL_ID),
@@ -101,3 +103,5 @@ def send_final_result(message, data, r_mid):
     except Exception as e:
         send_log(f"❌ Result Copy Error: {e}\nMID: {data['db_mid']}")
         bot.send_message(target_chat, "❌ <b>Error:</b> Post missing in DB Channel.", reply_to_message_id=r_mid)
+
+# Join & Support Us! @DogeshBhai_Pure_Bot
