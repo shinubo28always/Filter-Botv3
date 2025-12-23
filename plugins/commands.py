@@ -41,22 +41,3 @@ def del_f(m):
 @bot.callback_query_handler(func=lambda c: c.data == "conf_all")
 def conf_all(c):
     db.delete_all_filters(); bot.edit_message_text("🗑 All Deleted.", c.message.chat.id, c.message.message_id)
-
-@bot.message_handler(commands=['add_admin'])
-def add_adm(m):
-    if str(m.from_user.id) != str(config.OWNER_ID): return
-    try:
-        u = m.text.split()[1]; db.add_admin(u); bot.reply_to(m, "Admin Added.")
-    except: pass
-
-@bot.message_handler(commands=['del_admin'])
-def del_adm(m):
-    if str(m.from_user.id) != str(config.OWNER_ID): return
-    try:
-        u = m.text.split()[1]; db.del_admin(u); bot.reply_to(m, "Admin Removed.")
-    except: pass
-
-@bot.message_handler(commands=['admins'])
-def list_adms(m):
-    if not db.is_admin(m.from_user.id): return
-    ad = db.get_all_admins(); bot.reply_to(m, "\n".join(ad))
