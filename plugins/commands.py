@@ -52,7 +52,7 @@ def start_handler(message):
     else:
         # Group Start Msg
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
-        bot.send_message(chat_id, "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ.</b>\nJᴜsᴛ ᴛʏᴘᴇ Anime Nᴀᴍᴇ ᴛᴏ sᴇᴀʀᴄʜ.", reply_markup=markup, parse_mode="HTML", reply_to_message_id=message.message_id)
+        bot.send_message(chat_id, "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ.</b>\nJᴜsᴛ ᴛʏᴘᴇ Anime Nᴀᴍᴇ ᴛᴏ sᴇᴀʀᴄʜ.", reply_markup=markup, parse_mode="HTML", reply_to_message_id=message.message_id, message_thread_id=message.message_thread_id)
 
 # --- 4. ADMIN COMMANDS (FILTERS, STATS, PING) ---
 
