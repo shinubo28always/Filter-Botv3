@@ -8,11 +8,11 @@ load_dotenv()
 def get_config(key, default=None):
     # Priority: 1. Hardcoded, 2. .env, 3. Host Env
     hardcoded = {
-        "API_TOKEN": "8287122331:AAGJAPF3cjJmV_am7zZyAAE6xwvPOIPUq4o", 
+        "API_TOKEN": "", 
         "OWNER_ID": "", 
         "MONGO_URI": "",
-        "DB_CHANNEL_ID": "-1002511179462",
-        "LOG_CHANNEL_ID": "-1002511179462"
+        "DB_CHANNEL_ID": "",
+        "LOG_CHANNEL_ID": ""
     }
     val = hardcoded.get(key) or os.getenv(key)
     return val if val else default
