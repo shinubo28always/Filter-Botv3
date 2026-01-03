@@ -30,5 +30,6 @@ EFFECT_PARTY = "5046509860389126442"
 START_IMG = "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg"
 
 LINK_ANIME_CHANNEL = "https://t.me/DogeshBhai_Pure_Bot"
+HELP_ADMIN = "https://AniReal_Chat_Group_Asia"
 
 # Join & Support Us! @DogeshBhai_Pure_Bot
