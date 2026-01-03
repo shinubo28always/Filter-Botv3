@@ -32,4 +32,19 @@ START_IMG = "https://graph.org/file/fdc4357abfaba23255e98-24d1bbfa3888cdfcfe.jpg
 LINK_ANIME_CHANNEL = "https://t.me/DogeshBhai_Pure_Bot"
 HELP_ADMIN = "https://AniReal_Chat_Group_Asia"
 
+
+PM_START_MSG = (
+    "🎬 <b>Wᴇʟᴄᴏᴍᴇ {first_name}!</b>\n\n"
+    "Hᴇʏ ᴛʜᴇʀᴇ! I’ᴍ ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ Aɴɪᴍᴇ Cʜᴀɴɴᴇʟ Fɪʟᴛᴇʀ Bᴏᴛ 💫\n"
+    "• I ᴏɴʟʏ ᴘʀᴏᴠɪᴅᴇ ᴠᴇʀɪꜰɪᴇᴅ Aɴɪᴍᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋs.\n"
+    "• Iꜰ ᴀɴʏ ʟɪɴᴋ ᴅᴏᴇsɴ’ᴛ ᴡᴏʀᴋ, ᴊᴜsᴛ ʀᴇᴘᴏʀᴛ ɪɴ sᴜᴘᴘᴏʀᴛ.\n\n"
+    "✨ <i>Just type Anime Name to search!</i>"
+)
+GROUP_START_MSG = (
+    "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ ɪɴ {group_name}.</b>\n\n"
+    "Jᴜsᴛ ᴛʏᴘᴇ ᴛʜᴇ Aɴɪᴍᴇ Nᴀᴍᴇ ᴛᴏ ɢᴇᴛ ʟɪɴᴋs.\n"
+    "Mᴀᴋᴇ sᴜʀᴇ I ᴀᴍ Aᴅᴍɪɴ ʜᴇʀᴇ! 🚀"
+)
+
+
 # Join & Support Us! @DogeshBhai_Pure_Bot
