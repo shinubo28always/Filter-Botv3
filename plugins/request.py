@@ -19,7 +19,7 @@ def request_command(message):
         
         return bot.reply_to(
             message, 
-            "<b>❌ Request feature sirf PM mein kaam karta hai!</b>\n\nNiche button par click karke direct PM mein request karein.", 
+            "<b>⚠️ Tʜɪs ᴀᴄᴛɪᴏɴ ɪs ɴᴏᴛ sᴜᴘᴘᴏʀᴛᴇᴅ ɪɴ ɢʀᴏᴜᴘ ᴄʜᴀᴛs.</b>\n\n✅ 𝑃𝑙𝑒𝑎𝑠𝑒 𝑠𝑤𝑖𝑡𝑐ℎ 𝑡𝑜 𝑃𝑟𝑖𝑣𝑎𝑡𝑒 𝐶ℎ𝑎𝑡 𝑢𝑠𝑖𝑛𝑔 𝑡ℎ𝑒 𝑏𝑢𝑡𝑡𝑜𝑛 𝑏𝑒𝑙𝑜𝑤. 🔰", 
             reply_markup=markup
         )
     
