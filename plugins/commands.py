@@ -10,43 +10,49 @@ from telebot import types
 def start_handler(message):
     uid = message.from_user.id
     chat_id = message.chat.id
+    first_name = html.escape(message.from_user.first_name)
+    group_name = html.escape(message.chat.title) if message.chat.title else "this group"
+    
+    # User ko register karein
     db.add_user(uid)
     
-    # --- 1. FSUB CHECK (ONLY PM) ---
-    if message.chat.type == "private":
+    # --- 1. FSUB CHECK (ONLY PM & ONLY FOR NON-ADMINS) ---
+    if message.chat.type == "private" and not db.is_admin(uid):
         fsub_channels = db.get_all_fsub()
         for f in fsub_channels:
             try:
+                # Check if joined
                 member = bot.get_chat_member(int(f['_id']), uid)
                 if member.status not in ['member', 'administrator', 'creator']:
                     raise Exception("Not Joined")
             except Exception as e:
-                # Agar Bot Admin nahi hai ya join nahi hai
-                error_text = str(e)
-                if "Not Joined" in error_text:
-                    msg_txt = f"👋 <b>Welcome!</b>\n\nBot use karne ke liye hamara channel <b>{f['title']}</b> join karein."
-                else:
-                    msg_txt = f"⚠️ <b>FSub Error!</b>\n<code>{error_text}</code>\n\nAdmin ko report karein."
-                
-                # Dynamic Buttons
+                # Agar user join nahi hai ya bot us channel mein admin nahi hai
+                err_text = str(e)
                 markup = types.InlineKeyboardMarkup()
-                try:
-                    is_req = f.get('mode') == "request"
-                    invite = bot.create_chat_invite_link(int(f['_id']), expire_date=int(time.time())+120, creates_join_request=is_req, member_limit=1)
-                    markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
-                except: pass
                 
+                if "Not Joined" in err_text:
+                    msg_txt = f"👋 <b>Welcome {first_name}!</b>\n\nBot use karne ke liye hamara channel <b>{f['title']}</b> join karein."
+                    try:
+                        is_req = f.get('mode') == "request"
+                        invite = bot.create_chat_invite_link(int(f['_id']), expire_date=int(time.time())+120, creates_join_request=is_req, member_limit=1)
+                        markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
+                    except: pass
+                else:
+                    # Agar Bot admin nahi hai toh crash nahi hoga, sidha start msg bhej dega
+                    print(f"FSub Error for {f['title']}: {err_text}")
+                    break # Loop tod kar niche start msg bhej dega
+
                 markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
                 return bot.reply_to(message, msg_txt, reply_markup=markup, parse_mode='HTML')
 
-    # --- 2. DEEP LINKING ---
+    # --- 2. DEEP LINKING (REQUEST) ---
     if message.chat.type == "private" and len(message.text.split()) > 1:
         if message.text.split()[1] == "request":
             from plugins.request import initiate_request_flow
             initiate_request_flow(uid)
             return
 
-    # --- 3. STICKER ANIMATION (Common for both) ---
+    # --- 3. STICKER ANIMATION (AUTO-DELETE) ---
     try:
         stk = bot.send_sticker(chat_id, config.STICKER_ID)
         time.sleep(1.2)
@@ -55,22 +61,32 @@ def start_handler(message):
 
     # --- 4. START MESSAGE LOGIC ---
     if message.chat.type == "private":
-        # PM Start (With Photo + Effect)
+        # PM Text from Config
+        pm_text = config.PM_START_MSG.format(first_name=first_name)
+        
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
         markup.add(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
         
-        pm_text = "🎬 <b>Wᴇʟᴄᴏᴍᴇ ᴛᴏ Aɴɪᴍᴇ Fɪʟᴛᴇʀ Bᴏᴛ!</b>\n\nJust type Anime Name to search!"
         try:
-            bot.send_photo(chat_id, config.START_IMG, caption=pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
+            bot.send_photo(
+                chat_id, 
+                config.START_IMG, 
+                caption=pm_text, 
+                reply_markup=markup, 
+                parse_mode='HTML', 
+                message_effect_id=config.EFFECT_FIRE
+            )
         except:
             bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
     else:
-        # Group Start (Text Only - No Effect - No Image)
+        # Group Text from Config
+        group_text = config.GROUP_START_MSG.format(group_name=group_name)
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
-        bot.send_message(chat_id, "👋 <b>Bot Active!</b>\nAnime dhundne ke liye uska naam likhein.", reply_markup=markup, parse_mode='HTML')
+        bot.send_message(chat_id, group_text, reply_markup=markup, parse_mode='HTML')
 
-# --- Baki Admin Commands (Ping, Stats, Filters, Del_filter) ---
+# --- Baki Admin Commands ---
+
 @bot.message_handler(commands=['ping'])
 def ping_cmd(message):
     start = time.time()
@@ -81,7 +97,9 @@ def ping_cmd(message):
 @bot.message_handler(commands=['stats'])
 def stats_cmd(message):
     if not db.is_admin(message.from_user.id): return
-    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: <code>{len(db.get_all_users())}</code>\nFilters: <code>{len(db.get_all_filters_list())}</code>", parse_mode='HTML')
+    u_count = len(db.get_all_users())
+    f_count = len(db.get_all_filters_list())
+    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: <code>{u_count}</code>\nFilters: <code>{f_count}</code>", parse_mode='HTML')
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):
