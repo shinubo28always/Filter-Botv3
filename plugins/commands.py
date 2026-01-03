@@ -12,21 +12,35 @@ def start_handler(message):
     chat_id = message.chat.id
     db.add_user(uid)
     
-    # --- 1. DEEP LINKING (REQUEST REDIRECT) ---
+    # 1. FSUB CHECK (Only in Private Chat)
+    if message.chat.type == "private":
+        fsub_channels = db.get_all_fsub()
+        for f in fsub_channels:
+            try:
+                member = bot.get_chat_member(int(f['_id']), uid)
+                if member.status not in ['member', 'administrator', 'creator']:
+                    raise Exception("Not Joined")
+            except:
+                is_req = f.get('mode') == "request"
+                invite = bot.create_chat_invite_link(int(f['_id']), expire_date=int(time.time())+120, creates_join_request=is_req, member_limit=1)
+                markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
+                return bot.reply_to(message, f"👋 <b>Welcome!</b>\n\nBot use karne ke liye hamara channel <b>{f['title']}</b> join karein.", reply_markup=markup, parse_mode='HTML')
+
+    # 2. HANDLE DEEP LINKING (Request Parameter)
     if message.chat.type == "private" and len(message.text.split()) > 1:
         if message.text.split()[1] == "request":
             from plugins.request import initiate_request_flow
             initiate_request_flow(uid)
             return
 
-    # --- 2. STICKER ANIMATION ---
+    # 3. STICKER ANIMATION (Auto-Delete)
     try:
         stk = bot.send_sticker(chat_id, config.STICKER_ID)
         time.sleep(1.2)
         bot.delete_message(chat_id, stk.message_id)
     except: pass
 
-    # --- 3. START MESSAGE LOGIC ---
+    # 4. START MESSAGE LOGIC
     if message.chat.type == "private":
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
@@ -39,34 +53,26 @@ def start_handler(message):
             "• Jᴜsᴛ ᴛʏᴘᴇ ᴀɴɪᴍᴇ ɴᴀᴍᴇ ᴛᴏ sᴇᴀʀᴄʜ!"
         )
         try:
-            bot.send_photo(
-                chat_id, 
-                config.START_IMG, 
-                caption=pm_text, 
-                reply_markup=markup, 
-                parse_mode='HTML',
-                message_effect_id=config.EFFECT_FIRE
-            )
+            bot.send_photo(chat_id, config.START_IMG, caption=pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
         except:
-            bot.send_message(chat_id, pm_text, reply_markup=markup, message_effect_id=config.EFFECT_FIRE)
+            bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
     else:
-        # Group Start Msg
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
-        bot.send_message(chat_id, "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ.</b>\nJᴜsᴛ ᴛʏᴘᴇ Anime Nᴀᴍᴇ ᴛᴏ sᴇᴀʀᴄʜ.", reply_markup=markup, parse_mode="HTML", reply_to_message_id=message.message_id, message_thread_id=message.message_thread_id)
+        bot.send_message(chat_id, "👋 <b>Bot Active!</b>\nJᴜsᴛ ᴛʏᴘᴇ Anime Nᴀᴍᴇ ᴛᴏ sᴇᴀʀᴄʜ.", reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
 
-# --- 4. ADMIN COMMANDS (FILTERS, STATS, PING) ---
+# --- ADMIN COMMANDS ---
 
 @bot.message_handler(commands=['ping'])
 def ping_cmd(message):
     start = time.time()
     msg = bot.reply_to(message, "⚡")
     ms = round((time.time() - start) * 1000)
-    bot.edit_message_text(f"📶 <b>Pong:</b> <code>{ms}ms</code>", message.chat.id, msg.message_id)
+    bot.edit_message_text(f"📶 <b>Pong:</b> <code>{ms}ms</code>", message.chat.id, msg.message_id, parse_mode='HTML')
 
 @bot.message_handler(commands=['stats'])
 def stats_cmd(message):
     if not db.is_admin(message.from_user.id): return
-    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: {len(db.get_all_users())}\nFilters: {len(db.get_all_filters_list())}")
+    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: <code>{len(db.get_all_users())}</code>\nFilters: <code>{len(db.get_all_filters_list())}</code>", parse_mode='HTML')
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):
@@ -78,21 +84,16 @@ def list_filters(message):
         with open("filters.txt", "w") as f: f.write(txt)
         with open("filters.txt", "rb") as f: bot.send_document(message.chat.id, f); os.remove("filters.txt")
     else:
-        bot.reply_to(message, txt)
+        bot.reply_to(message, txt, parse_mode='HTML')
 
-# --- 5. DELETE FILTER (HARD SPACE FIX) ---
 @bot.message_handler(commands=['del_filter'])
 def delete_filter_cmd(message):
     if not db.is_admin(message.from_user.id): return
-    
-    # capture full input after command (e.g. witch watch)
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2: return bot.reply_to(message, "⚠️ Usage: /del_filter name or all")
     
     target = parts[1].lower().strip()
-    
     if target == "all":
-        # Check if filter named 'all' exists
         if db.get_filter("all"):
             db.delete_filter("all")
             return bot.reply_to(message, "✅ Filter 'all' deleted.")
@@ -101,18 +102,16 @@ def delete_filter_cmd(message):
                 types.InlineKeyboardButton("✅ Confirm All Delete", callback_data="hard_del_all_filters"),
                 types.InlineKeyboardButton("❌ Cancel", callback_data="cancel_del")
             )
-            return bot.reply_to(message, "⚠️ <b>Warning:</b> Database saaf karna hai?", reply_markup=markup)
+            return bot.reply_to(message, "⚠️ <b>Warning:</b> Database clear karna hai?", reply_markup=markup)
     else:
-        if db.delete_filter(target):
-            bot.reply_to(message, f"🗑️ Deleted: <code>{target}</code>")
-        else:
-            bot.reply_to(message, "❌ Filter nahi mila.")
+        if db.delete_filter(target): bot.reply_to(message, f"🗑️ Deleted: <code>{target}</code>", parse_mode='HTML')
+        else: bot.reply_to(message, "❌ Filter nahi mila.")
 
 @bot.callback_query_handler(func=lambda call: call.data in ["hard_del_all_filters", "cancel_del"])
 def handle_del_all(call):
     if not db.is_admin(call.from_user.id): return
     if call.data == "hard_del_all_filters":
         count = db.delete_all_filters()
-        bot.edit_message_text(f"🗑️ <b>All {count} filters deleted!</b>", call.message.chat.id, call.message.message_id)
+        bot.edit_message_text(f"🗑️ <b>All {count} filters deleted!</b>", call.message.chat.id, call.message.message_id, parse_mode='HTML')
     else:
         bot.delete_message(call.message.chat.id, call.message.message_id)
