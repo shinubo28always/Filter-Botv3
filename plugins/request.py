@@ -15,7 +15,7 @@ def request_command(message):
         markup = types.InlineKeyboardMarkup()
         bot_username = bot.get_me().username
         # Deep Link: start=request
-        markup.add(types.InlineKeyboardButton("🚀 Request in PM", url=f"https://t.me/{bot_username}?start=request"))
+        markup.add(types.InlineKeyboardButton("📩 Cʟɪᴄᴋ ᴛᴏ Sᴇɴᴅ Rᴇǫᴜᴇsᴛ", url=f"https://t.me/{bot_username}?start=request"))
         
         return bot.reply_to(
             message, 
