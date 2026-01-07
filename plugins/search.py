@@ -1,4 +1,5 @@
-### This is Created By UNRATED CODER --- Please Join & Support Us Our Team @UNRADED_CODER
+### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
+
 import time
 import config
 import database as db
@@ -6,7 +7,7 @@ from bot_instance import bot
 from telebot import types
 from thefuzz import process
 
-
+# ---------------- MESSAGE HANDLER ----------------
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
     if message.text.startswith("/"):
@@ -15,7 +16,7 @@ def search_handler(message):
     uid = message.from_user.id
     db.add_user(uid)
 
-    # ---------------- FSUB LOGIC ----------------
+    # ---------------- FSUB LOGIC (ONLY PM) ----------------
     if message.chat.type == "private":
         all_fsubs = db.get_all_fsub()
 
@@ -90,7 +91,7 @@ def send_fsub_message(message, missing_normals, request_fsubs):
             )
             markup.add(
                 types.InlineKeyboardButton(
-                    f"✨ Join {f['title']} ✨",
+                    f"✨ Join Now! ✨",
                     url=invite.invite_link
                 )
             )
@@ -107,13 +108,14 @@ def send_fsub_message(message, missing_normals, request_fsubs):
             )
             markup.add(
                 types.InlineKeyboardButton(
-                    f"✨ Request {r['title']} ✨",
+                    f"✨ Request to Join ✨",
                     url=req_invite.invite_link
                 )
             )
         except:
             pass
 
+    # CONTACT ADMIN BUTTON
     markup.add(
         types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN)
     )
@@ -121,7 +123,7 @@ def send_fsub_message(message, missing_normals, request_fsubs):
     text = (
         f"⚠️ <b>Access Restricted!</b>\n\n"
         f"To view search results, please join our official channels.\n"
-        f"Once joined, you can search again instantly."
+        f"Once joined, you can search again instantly.\n\n"
     )
 
     bot.reply_to(
@@ -156,8 +158,7 @@ def send_final_result(message, data, r_mid):
         bot.send_message(
             message.chat.id,
             f"❌ <b>Oops! Something went wrong.</b>\n"
-            f"<code>{str(e)}</code>\n"
-            f"Please try again later or contact admin.",
+            f"<code>{str(e)}</code>\nPlease try again later or contact admin.",
             parse_mode="HTML"
         )
 
@@ -176,24 +177,22 @@ def handle_fuz_click(call):
 
     uid = call.from_user.id
 
-    # CHECK NORMAL FSUBS AGAIN
-    missing_normals = []
-    for f in db.get_all_fsub():
-        if f.get("mode") == "request":
-            continue
-        try:
-            st = bot.get_chat_member(int(f['_id']), uid).status
-            if st not in ['member', 'administrator', 'creator']:
+    # CHECK NORMAL FSUBS AGAIN (ONLY PM)
+    if call.message.chat.type == "private":
+        missing_normals = []
+        for f in db.get_all_fsub():
+            if f.get("mode") == "request":
+                continue
+            try:
+                st = bot.get_chat_member(int(f['_id']), uid).status
+                if st not in ['member', 'administrator', 'creator']:
+                    missing_normals.append(f)
+            except:
                 missing_normals.append(f)
-        except:
-            missing_normals.append(f)
 
-    if missing_normals:
-        return bot.answer_callback_query(
-            call.id,
-            "⚠️ Please join the channel(s) first to access the search results.",
-            show_alert=True
-        )
+        if missing_normals:
+            request_fsubs = [f for f in db.get_all_fsub() if f.get("mode") == "request"]
+            return send_fsub_message(call.message, missing_normals, request_fsubs)
 
     data = db.get_filter(key) or db.get_filter(
         process.extractOne(key, db.get_all_keywords())[0]
@@ -206,4 +205,4 @@ def handle_fuz_click(call):
             pass
         send_final_result(call.message, data, int(mid))
 
-    ### Join Here & Support Us! TG - @UNRATED_CODER ###
+### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
