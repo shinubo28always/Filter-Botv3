@@ -13,10 +13,10 @@ def start_handler(message):
     first_name = html.escape(message.from_user.first_name)
     group_name = html.escape(message.chat.title) if message.chat.title else "this group"
     
-    # User ko database mein save karein
+    # User ko register karein
     db.add_user(uid)
     
-    # --- 1. HANDLE DEEP LINKING (IF ANY) ---
+    # --- 1. DEEP LINKING (REQUEST REDIRECT) ---
     if message.chat.type == "private" and len(message.text.split()) > 1:
         if message.text.split()[1] == "request":
             try:
@@ -31,48 +31,34 @@ def start_handler(message):
         bot.delete_message(chat_id, stk.message_id)
     except: pass
 
-    # --- 3. START MESSAGE (NO FSUB CHECK HERE - OPEN FOR ALL) ---
+    # --- 3. START MESSAGE DELIVERY ---
     if message.chat.type == "private":
-        # PM Start logic
         pm_text = config.PM_START_MSG.format(first_name=first_name)
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
         markup.add(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
         
         try:
-            bot.send_photo(
-                chat_id, 
-                config.START_IMG, 
-                caption=pm_text, 
-                reply_markup=markup, 
-                parse_mode='HTML', 
-                message_effect_id=config.EFFECT_FIRE
-            )
+            bot.send_photo(chat_id, config.START_IMG, caption=pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
         except:
             bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
     else:
-        # Group Start logic
         group_text = config.GROUP_START_MSG.format(group_name=group_name)
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
         bot.send_message(chat_id, group_text, reply_markup=markup, parse_mode='HTML')
 
-# ==========================================
-# 👇 ADMIN COMMANDS
-# ==========================================
+# --- ADMIN COMMANDS ---
 
 @bot.message_handler(commands=['ping'])
 def ping_cmd(message):
-    start = time.time()
+    s = time.time()
     msg = bot.reply_to(message, "⚡")
-    ms = round((time.time() - start) * 1000)
-    bot.edit_message_text(f"📶 <b>Pong:</b> <code>{ms}ms</code>", message.chat.id, msg.message_id, parse_mode='HTML')
+    bot.edit_message_text(f"📶 <b>Pong:</b> <code>{round((time.time()-s)*1000)}ms</code>", message.chat.id, msg.message_id, parse_mode='HTML')
 
 @bot.message_handler(commands=['stats'])
 def stats_cmd(message):
     if not db.is_admin(message.from_user.id): return
-    u = len(db.get_all_users())
-    f = len(db.get_all_filters_list())
-    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: <code>{u}</code>\nFilters: <code>{f}</code>", parse_mode='HTML')
+    bot.reply_to(message, f"📊 <b>Stats:</b>\nUsers: {len(db.get_all_users())}\nFilters: {len(db.get_all_filters_list())}", parse_mode='HTML')
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):
@@ -88,12 +74,16 @@ def delete_filter_cmd(message):
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2: return bot.reply_to(message, "⚠️ Usage: /del_filter name")
     target = parts[1].lower().strip()
-    
     if target == "all":
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✅ Confirm All", callback_data="hard_del_all_filters"))
         return bot.reply_to(message, "⚠️ Delete all filters?", reply_markup=markup)
-    
     if db.delete_filter(target):
         bot.reply_to(message, f"🗑️ Deleted: <code>{target}</code>", parse_mode='HTML')
     else:
-        bot.reply_to(message, "❌ Filter nahi mila.")
+        bot.reply_to(message, "❌ Not found.")
+
+@bot.callback_query_handler(func=lambda call: call.data == "hard_del_all_filters")
+def handle_del_all(call):
+    if not db.is_admin(call.from_user.id): return
+    db.delete_all_filters()
+    bot.edit_message_text("🗑️ <b>All filters deleted!</b>", call.message.chat.id, call.message.message_id, parse_mode='HTML')
