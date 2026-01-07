@@ -2,121 +2,198 @@ import time
 import config
 import database as db
 from bot_instance import bot
-from telebot import types, apihelper
+from telebot import types
 from thefuzz import process
+
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
-    if message.text.startswith("/"): return
-    
+    if message.text.startswith("/"):
+        return
+
     uid = message.from_user.id
     db.add_user(uid)
-    
-    # --- 1. LIVE FSUB CHECK (FOR EVERYONE IN PM) ---
+
+    # ---------------- FSUB LOGIC ----------------
     if message.chat.type == "private":
         all_fsubs = db.get_all_fsub()
-        for f in all_fsubs:
+
+        normal_fsubs = [f for f in all_fsubs if f.get("mode") != "request"]
+        request_fsubs = [f for f in all_fsubs if f.get("mode") == "request"]
+
+        # ---- HARD FSUB CHECK (ONLY NORMAL CHANNELS) ----
+        for f in normal_fsubs:
             try:
-                f_id = int(f['_id'])
-                # Live status fetch from Telegram
-                member = bot.get_chat_member(f_id, uid)
-                
-                # Check: Creator, Admin, ya Member hai?
-                is_authorized = member.status in ['member', 'administrator', 'creator']
-                
-                if not is_authorized:
-                    raise Exception("NotJoined")
-            except Exception as e:
-                # User joined nahi hai ya link banana hai
-                markup = types.InlineKeyboardMarkup()
-                is_req = f.get('mode') == "request"
-                # Expiry fixed to 2 minutes as requested
-                expiry = int(time.time()) + 120 
-                
-                try:
-                    invite = bot.create_chat_invite_link(
-                        chat_id=f_id, 
-                        expire_date=expiry, 
-                        creates_join_request=is_req
-                    )
-                    link = invite.invite_link
-                    # CLEAN BUTTON TEXT
-                    btn_text = "✨ Request To Join ✨" if is_req else "✨ Join Channel ✨"
-                    markup.add(types.InlineKeyboardButton(btn_text, url=link))
-                except:
-                    # Fallback only if invite link fails
-                    pass
+                member = bot.get_chat_member(int(f['_id']), uid)
+                if member.status not in ['member', 'administrator', 'creator']:
+                    raise Exception("NOT_JOINED")
+            except:
+                return send_fsub_message(message, f, request_fsubs)
 
-                markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-                
-                err_code = str(e)
-                if "NotJoined" in err_code or "user not found" in err_code.lower():
-                    msg_txt = f"<b>⚠️ Access Denied!</b>\n\nSearch results dekhne ke liye pehle hamara channel <b>{f['title']}</b> join karein.\n\n<i>Join karne ke baad dobara search karein!</i>"
-                else:
-                    msg_txt = f"❌ <b>Error!</b>\n<code>{err_code}</code>"
-                
-                return bot.reply_to(message, msg_txt, reply_markup=markup, parse_mode='HTML')
-
-    # --- 2. SEARCH ENGINE ---
+    # ---------------- SEARCH ENGINE ----------------
     query = message.text.lower().strip()
     choices = db.get_all_keywords()
-    if not choices: return
+    if not choices:
+        return
 
     matches = process.extract(query, choices, limit=10)
     best_matches = [m for m in matches if m[1] > 70]
-    if not best_matches: return
+    if not best_matches:
+        return
 
+    # Exact match
     if best_matches[0][1] >= 95:
         data = db.get_filter(best_matches[0][0])
         send_final_result(message, data, message.message_id)
         return
 
-    # Suggestions Logic
+    # Suggestions
     markup = types.InlineKeyboardMarkup()
-    seen_titles = set()
-    for b in best_matches:
-        f_data = db.get_filter(b[0])
-        if f_data and f_data['title'] not in seen_titles:
-            cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
-            markup.add(types.InlineKeyboardButton(f"🎬 {f_data['title']}", callback_data=cb))
-            seen_titles.add(f_data['title'])
-    
-    if seen_titles:
-        bot.reply_to(message, f"🧐 <b>Did you mean:</b>", reply_markup=markup)
+    seen = set()
 
+    for b in best_matches:
+        row = db.get_filter(b[0])
+        if row and row['title'] not in seen:
+            cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
+            markup.add(
+                types.InlineKeyboardButton(f"🎬 {row['title']}", callback_data=cb)
+            )
+            seen.add(row['title'])
+
+    if seen:
+        bot.reply_to(
+            message,
+            "🧐 <b>Did you mean:</b>",
+            reply_markup=markup,
+            parse_mode="HTML"
+        )
+
+
+# ---------------- FORCE JOIN MESSAGE ----------------
+def send_fsub_message(message, hard_ch, request_fsubs):
+    markup = types.InlineKeyboardMarkup()
+    expiry = int(time.time()) + 120  # 2 minutes
+
+    # HARD JOIN BUTTON
+    try:
+        invite = bot.create_chat_invite_link(
+            chat_id=int(hard_ch['_id']),
+            expire_date=expiry,
+            creates_join_request=False
+        )
+        markup.add(
+            types.InlineKeyboardButton(
+                "✨ Join Channel ✨",
+                url=invite.invite_link
+            )
+        )
+    except:
+        pass
+
+    # OPTIONAL REQUEST CHANNEL BUTTONS (NO CHECK)
+    for r in request_fsubs:
+        try:
+            req_invite = bot.create_chat_invite_link(
+                chat_id=int(r['_id']),
+                expire_date=expiry,
+                creates_join_request=True
+            )
+            markup.add(
+                types.InlineKeyboardButton(
+                    "✨ Request To Join ✨",
+                    url=req_invite.invite_link
+                )
+            )
+        except:
+            pass
+
+    markup.add(
+        types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN)
+    )
+
+    text = (
+        f"<b>⚠️ Access Denied!</b>\n\n"
+        f"Bot use karne ke liye pehle "
+        f"<b>{hard_ch['title']}</b> join karna hoga.\n\n"
+        f"<i>Join karne ke baad dobara search karein.</i>"
+    )
+
+    bot.reply_to(
+        message,
+        text,
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
+
+
+# ---------------- SEND RESULT ----------------
 def send_final_result(message, data, r_mid):
     try:
-        # Link generator for the result button
-        invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
+        invite = bot.create_chat_invite_link(int(data['source_cid']))
         link = invite.invite_link
     except:
         link = config.LINK_ANIME_CHANNEL
 
-    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=link))
-    try:
-        bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
-    except Exception as e:
-        bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
+    markup = types.InlineKeyboardMarkup().add(
+        types.InlineKeyboardButton("🎬 Watch / Download", url=link)
+    )
 
+    try:
+        bot.copy_message(
+            message.chat.id,
+            int(config.DB_CHANNEL_ID),
+            int(data['db_mid']),
+            reply_markup=markup,
+            reply_to_message_id=r_mid
+        )
+    except Exception as e:
+        bot.send_message(
+            message.chat.id,
+            f"❌ <b>Error!</b>\n<code>{str(e)}</code>",
+            parse_mode="HTML"
+        )
+
+
+# ---------------- CALLBACK HANDLER ----------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fuz|"))
 def handle_fuz_click(call):
     _, key, mid, ouid = call.data.split("|")
-    # EVERYONE Check: Even Admins must be the original searcher or authorized
+
     if int(call.from_user.id) != int(ouid) and not db.is_admin(call.from_user.id):
-        return bot.answer_callback_query(call.id, "⚠️ Ye aapka request nahi hai!", show_alert=True)
-    
-    # Re-verify FSub status before allowing callback result
+        return bot.answer_callback_query(
+            call.id,
+            "⚠️ Ye aapka request nahi hai!",
+            show_alert=True
+        )
+
     uid = call.from_user.id
-    fsub_channels = db.get_all_fsub()
-    for f in fsub_channels:
+
+    # ONLY NORMAL FSUB CHECK AGAIN
+    for f in db.get_all_fsub():
+        if f.get("mode") == "request":
+            continue
         try:
             st = bot.get_chat_member(int(f['_id']), uid).status
             if st not in ['member', 'administrator', 'creator']:
-                return bot.answer_callback_query(call.id, "⚠️ Pehle FSub join karein!", show_alert=True)
-        except: pass
+                return bot.answer_callback_query(
+                    call.id,
+                    "⚠️ Pehle channel join karein!",
+                    show_alert=True
+                )
+        except:
+            return bot.answer_callback_query(
+                call.id,
+                "⚠️ Pehle channel join karein!",
+                show_alert=True
+            )
 
-    data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
+    data = db.get_filter(key) or db.get_filter(
+        process.extractOne(key, db.get_all_keywords())[0]
+    )
+
     if data:
-        try: bot.delete_message(call.message.chat.id, call.message.message_id)
-        except: pass
+        try:
+            bot.delete_message(call.message.chat.id, call.message.message_id)
+        except:
+            pass
         send_final_result(call.message, data, int(mid))
