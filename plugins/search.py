@@ -12,8 +12,8 @@ from telebot import types
 from thefuzz import process, fuzz
 
 # ---------------- SETTINGS ----------------
-ITEMS_PER_PAGE = 5   # 5 Rows (1 button per row)
-FUZZY_THRESHOLD = 80 # Strict matching
+ITEMS_PER_PAGE = 5   # 5 Rows (1 anime per row)
+FUZZY_THRESHOLD = 80 # Strict search
 
 # ---------------- MESSAGE HANDLER ----------------
 @bot.message_handler(func=lambda m: True, content_types=['text'])
@@ -58,7 +58,7 @@ def search_handler(message):
     
     if not best_matches:
         if message.chat.type == "private":
-            bot.reply_to(message, "❌ <b>No results found!</b>\nPlease check spelling or browse via index (e.g. send 'A').")
+            bot.reply_to(message, "❌ <b>No results found!</b>\nCheck spelling or send a single letter (e.g. 'A') to browse.")
         return
 
     # Exact match (Score 95+)
@@ -74,7 +74,6 @@ def search_handler(message):
         row = db.get_filter(b[0])
         if row and row['title'] not in seen:
             cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
-            # 1 row mein 1 anime button
             markup.add(types.InlineKeyboardButton(f"🎬 {row['title']}", callback_data=cb))
             seen.add(row['title'])
             if len(seen) >= 5: break 
@@ -84,7 +83,7 @@ def search_handler(message):
 
 
 # ---------------- INDEX PAGE GENERATOR ----------------
-def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False):
+def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False, edit_mid=None):
     all_kws = db.get_all_keywords()
     filtered_kws = [kw for kw in all_kws if kw.startswith(letter)]
     
@@ -106,21 +105,20 @@ def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False):
     page_items = unique_results[start:end]
 
     markup = types.InlineKeyboardMarkup()
-    # Add anime buttons (1 button per row)
     for item in page_items:
         markup.add(types.InlineKeyboardButton(f"🎬 {item['title']}", callback_data=f"fuz|{item['kw'][:20]}|{original_mid}|{uid}"))
 
-    # Navigation
-    nav_buttons = []
+    # Navigation logic
+    nav_row = []
     if page > 1:
-        nav_buttons.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}"))
+        nav_row.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}"))
     
-    nav_buttons.append(types.InlineKeyboardButton(f"Page {page}/{total_pages}", callback_data="none"))
+    nav_row.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none"))
     
     if page < total_pages:
-        nav_buttons.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}"))
+        nav_row.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}"))
     
-    markup.row(*nav_buttons)
+    markup.row(*nav_row)
 
     text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_results)}</code>"
     
@@ -128,33 +126,37 @@ def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False):
         if is_new:
             bot.send_message(chat_id, text, reply_markup=markup, reply_to_message_id=original_mid)
         else:
-            bot.edit_message_text(text, chat_id, bot.get_message(chat_id, bot.get_me().id).message_id, reply_markup=markup)
+            bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
     except Exception as e:
-        print(f"Index Update Error: {e}")
+        print(f"Index UI Error: {e}")
 
 
 # ---------------- CALLBACK HANDLER ----------------
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
-    data = call.data.split("|")
     clicker_id = call.from_user.id
+    data = call.data.split("|")
 
-    # 1. INDEX NAVIGATION
+    # 1. INDEX NAVIGATION (FIXED)
     if data[0] == "ind":
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
-        if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ This is not your search! Search yourself @UNRATED_CODER", show_alert=True)
         
-        send_index_page(call.message.chat.id, letter, page, original_mid, ouid, is_new=False)
+        # User Lock
+        if clicker_id != ouid and not db.is_admin(clicker_id):
+            return bot.answer_callback_query(call.id, "⚠️ Search yourself @UNRATED_CODER", show_alert=True)
+        
+        # Edit the current message with the new page
+        send_index_page(call.message.chat.id, letter, page, original_mid, ouid, is_new=False, edit_mid=call.message.message_id)
+        bot.answer_callback_query(call.id) # Loading spinner stop
         return
 
     # 2. RESULT HANDLER
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
         if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Not your request! Search yourself @UNRATED_CODER", show_alert=True)
+            return bot.answer_callback_query(call.id, "⚠️ Not your request @UNRATED_CODER", show_alert=True)
 
-        # FSub Safety Re-check
+        # FSub Re-check
         if call.message.chat.type == "private":
             missing = []
             for f in db.get_all_fsub():
@@ -164,7 +166,7 @@ def handle_callbacks(call):
                     if st not in ['member', 'administrator', 'creator']: missing.append(f)
                 except: missing.append(f)
             if missing:
-                bot.answer_callback_query(call.id, "❌ Join our channels first!", show_alert=True)
+                bot.answer_callback_query(call.id, "❌ Join channels first!", show_alert=True)
                 return send_fsub_message(call.message, missing, [])
 
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
@@ -174,7 +176,7 @@ def handle_callbacks(call):
             send_final_result(call.message, filter_data, mid)
 
 
-# ---------------- UTILS (FSUB & RESULTS) ----------------
+# ---------------- UTILS ----------------
 
 def send_fsub_message(message, missing_normals, request_fsubs):
     markup = types.InlineKeyboardMarkup()
@@ -190,36 +192,19 @@ def send_fsub_message(message, missing_normals, request_fsubs):
             markup.add(types.InlineKeyboardButton(f"✨ Request to Join ✨", url=invite.invite_link))
         except: pass
     markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-    
-    text = "⚠️ <b>Access Restricted!</b>\n\nTo view search results, please join our official channels first."
-    bot.reply_to(message, text, reply_markup=markup, parse_mode="HTML")
+    bot.reply_to(message, "⚠️ <b>Access Restricted!</b>\nJoin our official channels to view results.", reply_markup=markup)
 
 def send_final_result(message, data, r_mid):
     try:
-        # Permanent Result Link
         invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
         link = invite.invite_link
-    except:
-        link = config.LINK_ANIME_CHANNEL
+    except: link = config.LINK_ANIME_CHANNEL
 
     markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=link))
-    
     try:
-        bot.copy_message(
-            chat_id=message.chat.id,
-            from_chat_id=int(config.DB_CHANNEL_ID),
-            message_id=int(data['db_mid']),
-            reply_markup=markup,
-            reply_to_message_id=r_mid
-        )
+        bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
     except Exception as e:
-        # Error msg includes the actual exception {e} for debugging
-        bot.send_message(
-            message.chat.id, 
-            f"❌ <b>Error!</b>\n<code>{str(e)}</code>", 
-            reply_to_message_id=r_mid,
-            parse_mode="HTML"
-        )
+        bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid, parse_mode="HTML")
 
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
 ### --------> https://t.me/UNRATED_CODER <-------- ###
