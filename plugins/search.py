@@ -1,5 +1,5 @@
 ### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
-
+### 
 import time
 import config
 import database as db
@@ -206,3 +206,4 @@ def handle_fuz_click(call):
         send_final_result(call.message, data, int(mid))
 
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
+### --------> https://t.me/UNRATED_CODER <-------- ###
