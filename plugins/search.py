@@ -1,3 +1,4 @@
+### This is Created By UNRATED CODER --- Please Join & Support Us Our Team @UNRADED_CODER
 import time
 import config
 import database as db
@@ -21,14 +22,19 @@ def search_handler(message):
         normal_fsubs = [f for f in all_fsubs if f.get("mode") != "request"]
         request_fsubs = [f for f in all_fsubs if f.get("mode") == "request"]
 
-        # ---- HARD FSUB CHECK (ONLY NORMAL CHANNELS) ----
+        missing_normals = []
+
+        # Collect all normal FSubs where user is NOT joined
         for f in normal_fsubs:
             try:
                 member = bot.get_chat_member(int(f['_id']), uid)
                 if member.status not in ['member', 'administrator', 'creator']:
-                    raise Exception("NOT_JOINED")
+                    missing_normals.append(f)
             except:
-                return send_fsub_message(message, f, request_fsubs)
+                missing_normals.append(f)
+
+        if missing_normals or request_fsubs:
+            return send_fsub_message(message, missing_normals, request_fsubs)
 
     # ---------------- SEARCH ENGINE ----------------
     query = message.text.lower().strip()
@@ -70,25 +76,26 @@ def search_handler(message):
 
 
 # ---------------- FORCE JOIN MESSAGE ----------------
-def send_fsub_message(message, hard_ch, request_fsubs):
+def send_fsub_message(message, missing_normals, request_fsubs):
     markup = types.InlineKeyboardMarkup()
     expiry = int(time.time()) + 120  # 2 minutes
 
-    # HARD JOIN BUTTON
-    try:
-        invite = bot.create_chat_invite_link(
-            chat_id=int(hard_ch['_id']),
-            expire_date=expiry,
-            creates_join_request=False
-        )
-        markup.add(
-            types.InlineKeyboardButton(
-                "✨ Join Channel ✨",
-                url=invite.invite_link
+    # NORMAL FSUB BUTTONS (HARD CHECK)
+    for f in missing_normals:
+        try:
+            invite = bot.create_chat_invite_link(
+                chat_id=int(f['_id']),
+                expire_date=expiry,
+                creates_join_request=False
             )
-        )
-    except:
-        pass
+            markup.add(
+                types.InlineKeyboardButton(
+                    f"✨ Join {f['title']} ✨",
+                    url=invite.invite_link
+                )
+            )
+        except:
+            pass
 
     # OPTIONAL REQUEST CHANNEL BUTTONS (NO CHECK)
     for r in request_fsubs:
@@ -100,7 +107,7 @@ def send_fsub_message(message, hard_ch, request_fsubs):
             )
             markup.add(
                 types.InlineKeyboardButton(
-                    "✨ Request To Join ✨",
+                    f"✨ Request {r['title']} ✨",
                     url=req_invite.invite_link
                 )
             )
@@ -112,10 +119,9 @@ def send_fsub_message(message, hard_ch, request_fsubs):
     )
 
     text = (
-        f"<b>⚠️ Access Denied!</b>\n\n"
-        f"Bot use karne ke liye pehle "
-        f"<b>{hard_ch['title']}</b> join karna hoga.\n\n"
-        f"<i>Join karne ke baad dobara search karein.</i>"
+        f"⚠️ <b>Access Restricted!</b>\n\n"
+        f"To view search results, please join our official channels.\n"
+        f"Once joined, you can search again instantly."
     )
 
     bot.reply_to(
@@ -149,7 +155,9 @@ def send_final_result(message, data, r_mid):
     except Exception as e:
         bot.send_message(
             message.chat.id,
-            f"❌ <b>Error!</b>\n<code>{str(e)}</code>",
+            f"❌ <b>Oops! Something went wrong.</b>\n"
+            f"<code>{str(e)}</code>\n"
+            f"Please try again later or contact admin.",
             parse_mode="HTML"
         )
 
@@ -162,30 +170,30 @@ def handle_fuz_click(call):
     if int(call.from_user.id) != int(ouid) and not db.is_admin(call.from_user.id):
         return bot.answer_callback_query(
             call.id,
-            "⚠️ Ye aapka request nahi hai!",
+            "⚠️ This is not your request! Please search yourself.",
             show_alert=True
         )
 
     uid = call.from_user.id
 
-    # ONLY NORMAL FSUB CHECK AGAIN
+    # CHECK NORMAL FSUBS AGAIN
+    missing_normals = []
     for f in db.get_all_fsub():
         if f.get("mode") == "request":
             continue
         try:
             st = bot.get_chat_member(int(f['_id']), uid).status
             if st not in ['member', 'administrator', 'creator']:
-                return bot.answer_callback_query(
-                    call.id,
-                    "⚠️ Pehle channel join karein!",
-                    show_alert=True
-                )
+                missing_normals.append(f)
         except:
-            return bot.answer_callback_query(
-                call.id,
-                "⚠️ Pehle channel join karein!",
-                show_alert=True
-            )
+            missing_normals.append(f)
+
+    if missing_normals:
+        return bot.answer_callback_query(
+            call.id,
+            "⚠️ Please join the channel(s) first to access the search results.",
+            show_alert=True
+        )
 
     data = db.get_filter(key) or db.get_filter(
         process.extractOne(key, db.get_all_keywords())[0]
@@ -197,3 +205,5 @@ def handle_fuz_click(call):
         except:
             pass
         send_final_result(call.message, data, int(mid))
+
+    ### Join Here & Support Us! TG - @UNRATED_CODER ###
