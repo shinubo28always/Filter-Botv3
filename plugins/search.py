@@ -1,5 +1,9 @@
 ### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
-### 
+### ==========================★========================== ###
+### ---------- Created By UNRATED CODER ™ TEAM ---------- ###
+###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
+### ==========================★========================== ###
+ 
 import time
 import config
 import database as db
@@ -75,6 +79,9 @@ def search_handler(message):
             parse_mode="HTML"
         )
 
+### --- Join Now UNRATED CODER --- ###
+### === TG - @UNRATED_CODER === ###
+
 
 # ---------------- FORCE JOIN MESSAGE ----------------
 def send_fsub_message(message, missing_normals, request_fsubs):
@@ -133,6 +140,8 @@ def send_fsub_message(message, missing_normals, request_fsubs):
         parse_mode="HTML"
     )
 
+### --- Join Now UNRATED CODER --- ###
+### === TG - @UNRATED_CODER === ###
 
 # ---------------- SEND RESULT ----------------
 def send_final_result(message, data, r_mid):
@@ -162,6 +171,8 @@ def send_final_result(message, data, r_mid):
             parse_mode="HTML"
         )
 
+### --- Join Now UNRATED CODER --- ###
+### === TG - @UNRATED_CODER === ###
 
 # ---------------- CALLBACK HANDLER ----------------
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fuz|"))
