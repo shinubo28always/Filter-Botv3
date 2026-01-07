@@ -65,8 +65,10 @@ def list_filters(message):
     if not db.is_admin(message.from_user.id): return
     fs = db.get_all_filters_list()
     if not fs: return bot.reply_to(message, "📂 Database Khali Hai!")
-    txt = "📂 <b>Filters:</b>\n\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
-    bot.reply_to(message, txt[:4000], parse_mode='HTML')
+    txt = "📂 <b>Available Filters:</b>\n\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
+    bot.reply_to(message, txt[:4000])
+# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+# This Bot Created By: @AniReal_Support!
 
 @bot.message_handler(commands=['del_filter'])
 def delete_filter_cmd(message):
