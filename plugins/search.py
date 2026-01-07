@@ -2,7 +2,7 @@ import time
 import config
 import database as db
 from bot_instance import bot
-from telebot import types
+from telebot import types, apihelper
 from thefuzz import process
 from utils import send_log
 
@@ -13,59 +13,58 @@ def search_handler(message):
     uid = message.from_user.id
     db.add_user(uid)
     
-    # --- 1. FSUB CHECK WITH DYNAMIC LINK FIX (PM ONLY) ---
+    # --- 1. FSUB LOGIC (ONLY IN PM) ---
     if message.chat.type == "private":
-        fsub_channels = db.get_all_fsub()
-        for f in fsub_channels:
-            f_id = int(f['_id'])
+        all_fsubs = db.get_all_fsub()
+        not_joined = []
+
+        # Check karein kaunsa channel join nahi hai
+        for f in all_fsubs:
             try:
-                member = bot.get_chat_member(f_id, uid)
+                member = bot.get_chat_member(int(f['_id']), uid)
                 if member.status not in ['member', 'administrator', 'creator']:
-                    raise Exception("NotJoined")
-            except Exception as e:
-                # Agar user join nahi hai ya bot admin nahi hai
-                markup = types.InlineKeyboardMarkup()
-                is_req = f.get('mode') == "request"
-                
-                # --- DYNAMIC LINK LOGIC (Fixing the wrong link error) ---
-                fsub_invite_link = None
+                    not_joined.append(f)
+            except Exception:
+                not_joined.append(f)
+
+        # Agar ek bhi join nahi hai, toh saare buttons dikhao
+        if not_joined:
+            markup = types.InlineKeyboardMarkup()
+            for f in all_fsubs:
+                f_id = int(f['_id'])
+                mode = f.get('mode', 'normal')
+                is_req = mode == "request"
                 
                 try:
-                    # Method 1: Try to create a temporary invite link
+                    # Link Generation based on Mode
                     expiry = 300 if is_req else 120
                     invite = bot.create_chat_invite_link(
-                        chat_id=f_id, 
-                        expire_date=int(time.time()) + expiry, 
-                        creates_join_request=is_req, 
+                        chat_id=f_id,
+                        expire_date=int(time.time()) + expiry,
+                        creates_join_request=is_req,
                         member_limit=1
                     )
-                    fsub_invite_link = invite.invite_link
-                except:
-                    # Method 2: Fallback to Public Username link if Method 1 fails
-                    try:
-                        chat_data = bot.get_chat(f_id)
-                        if chat_data.username:
-                            fsub_invite_link = f"https://t.me/{chat_data.username}"
-                    except: pass
+                    link = invite.invite_link
+                    btn_text = f"✨ {'Request To Join' if is_req else 'Join Channel'}: {f['title']} ✨"
+                    markup.add(types.InlineKeyboardButton(btn_text, url=link))
+                except Exception as e:
+                    # Agar link fail ho toh error msg formatting
+                    return bot.reply_to(
+                        message, 
+                        f"❌ <b>Error!</b>\n<code>{str(e)}</code>", 
+                        reply_markup=types.InlineKeyboardMarkup().add(
+                            types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN)
+                        ),
+                        parse_mode='HTML'
+                    )
 
-                # Final Verification: Agar link abhi bhi nahi mila toh anime channel mat dena
-                if not fsub_invite_link:
-                    fsub_invite_link = config.HELP_ADMIN # Error hone par support link do
-                    err_msg = f"❌ <b>Bot Permission Error!</b>\n\nBot is not admin in FSub channel <b>{f['title']}</b> or don't have 'Invite Users' permission."
-                else:
-                    err_text = str(e)
-                    if "NotJoined" in err_text or "user not found" in err_text.lower():
-                        err_msg = f"👋 <b>Wait!</b>\n\nResults dekhne ke liye pehle hamara channel <b>{f['title']}</b> join karein.\n\nJoin karne ke baad dobara search karein!"
-                    else:
-                        err_msg = f"❌ <b>FSub Error!</b>\n<code>{err_text}</code>"
+            # Extra Support Button
+            markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
+            
+            join_msg = "<b>👋 Welcome!</b>\n\nResults dekhne ke liye hamare niche diye gaye channels join karein.\n\n<i>Join hone ke baad dobara search karein!</i>"
+            return bot.reply_to(message, join_msg, reply_markup=markup, parse_mode='HTML')
 
-                btn_txt = "✨ Rᴇǫᴜᴇsᴛ Tᴏ Jᴏɪɴ ✨" if is_req else "✨ Jᴏɪɴ Cʜᴀɴɴᴇʟ ✨"
-                markup.add(types.InlineKeyboardButton(btn_txt, url=fsub_invite_link))
-                markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-                
-                return bot.reply_to(message, err_msg, reply_markup=markup, parse_mode='HTML')
-
-    # --- 2. SEARCH LOGIC ---
+    # --- 2. SEARCH LOGIC (FOR GROUPS & AUTHORIZED PM) ---
     query = message.text.lower().strip()
     choices = db.get_all_keywords()
     if not choices: return
@@ -77,20 +76,18 @@ def search_handler(message):
     if best_matches[0][1] >= 95:
         data = db.get_filter(best_matches[0][0])
         send_final_result(message, data, message.message_id)
-        return
-
-    # Suggestions Logic (Removing duplicates)
-    markup = types.InlineKeyboardMarkup()
-    seen_titles = set()
-    for b in best_matches:
-        f_data = db.get_filter(b[0])
-        if f_data and f_data['title'] not in seen_titles:
-            cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
-            markup.add(types.InlineKeyboardButton(f"🎬 {f_data['title']}", callback_data=cb))
-            seen_titles.add(f_data['title'])
-    
-    if seen_titles:
-        bot.reply_to(message, f"🧐 <b>Hey {message.from_user.first_name}, did you mean:</b>", reply_markup=markup)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        seen_titles = set()
+        for b in best_matches:
+            f_data = db.get_filter(b[0])
+            if f_data and f_data['title'] not in seen_titles:
+                cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
+                markup.add(types.InlineKeyboardButton(f"🎬 {f_data['title']}", callback_data=cb))
+                seen_titles.add(f_data['title'])
+        
+        if seen_titles:
+            bot.reply_to(message, f"🧐 <b>Hey {message.from_user.first_name}, did you mean:</b>", reply_markup=markup)
 
 def send_final_result(message, data, r_mid):
     target_chat = message.chat.id
@@ -105,7 +102,7 @@ def send_final_result(message, data, r_mid):
     try:
         bot.copy_message(target_chat, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
     except Exception as e:
-        bot.send_message(target_chat, f"❌ <b>Post missing!</b>\nDatabase channel se delete ho gayi hai.", reply_to_message_id=r_mid)
+        bot.send_message(target_chat, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fuz|"))
 def handle_fuz_click(call):
