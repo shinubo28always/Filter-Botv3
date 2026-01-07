@@ -11,44 +11,12 @@ def start_handler(message):
     uid = message.from_user.id
     chat_id = message.chat.id
     first_name = html.escape(message.from_user.first_name)
+    group_name = html.escape(message.chat.title) if message.chat.title else "this group"
     
-    # 1. Register User Always
+    # User ko database mein save karein
     db.add_user(uid)
     
-    # 2. STRICT FSUB CHECK (PM ONLY)
-    if message.chat.type == "private":
-        fsub_channels = db.get_all_fsub()
-        for f in fsub_channels:
-            f_id = int(f['_id'])
-            try:
-                # Check User Membership
-                member = bot.get_chat_member(f_id, uid)
-                if member.status not in ['member', 'administrator', 'creator']:
-                    raise Exception("NotJoined")
-            except Exception as e:
-                # ERROR HANDLING: Agar user join nahi hai ya bot admin nahi hai
-                err_msg = str(e)
-                markup = types.InlineKeyboardMarkup()
-                
-                if "NotJoined" in err_msg or "user not found" in err_msg.lower():
-                    # Jab user ne join nahi kiya
-                    final_txt = f"👋 <b>Welcome {first_name}!</b>\n\nBot use karne ke liye hamara channel <b>{f['title']}</b> join karein."
-                    try:
-                        is_req = f.get('mode') == "request"
-                        expiry = 300 if is_req else 120
-                        invite = bot.create_chat_invite_link(f_id, expire_date=int(time.time()) + expiry, creates_join_request=is_req, member_limit=1)
-                        markup.add(types.InlineKeyboardButton("✨ Jᴏɪɴ Cʜᴀɴɴᴇʟ ✨", url=invite.invite_link))
-                    except:
-                        # Fallback if link generation fails (Bot not admin)
-                        final_txt += "\n\n⚠️ <i>Error: Bot is not Admin in FSub Channel!</i>"
-                else:
-                    # Koi aur technical error (Like Bot not admin)
-                    final_txt = f"❌ <b>FSub Access Error!</b>\n\nBot ko channel <b>{f['title']}</b> mein access nahi mil raha.\n\n<code>Error: {err_msg}</code>"
-                
-                markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-                return bot.reply_to(message, final_txt, reply_markup=markup, parse_mode='HTML')
-
-    # 3. HANDLE DEEP LINKING (If user comes from /request button)
+    # --- 1. HANDLE DEEP LINKING (IF ANY) ---
     if message.chat.type == "private" and len(message.text.split()) > 1:
         if message.text.split()[1] == "request":
             try:
@@ -56,33 +24,40 @@ def start_handler(message):
                 return initiate_request_flow(uid)
             except: pass
 
-    # 4. STICKER ANIMATION (Only if FSub passed)
+    # --- 2. STICKER ANIMATION (Everyone gets this) ---
     try:
         stk = bot.send_sticker(chat_id, config.STICKER_ID)
         time.sleep(1.2)
         bot.delete_message(chat_id, stk.message_id)
     except: pass
 
-    # 5. START MESSAGE DELIVERY
+    # --- 3. START MESSAGE (NO FSUB CHECK HERE - OPEN FOR ALL) ---
     if message.chat.type == "private":
+        # PM Start logic
         pm_text = config.PM_START_MSG.format(first_name=first_name)
         markup = types.InlineKeyboardMarkup()
-        markup.row(types.InlineKeyboardButton("✨ Jᴏɪɴ Uᴘᴅᴀᴛᴇs ✨", url=config.LINK_ANIME_CHANNEL))
-        markup.add(types.InlineKeyboardButton("➕ Aᴅᴅ Bᴏᴛ ᴛᴏ Gʀᴏᴜᴘ ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
+        markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
+        markup.add(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
         
         try:
-            bot.send_photo(chat_id, config.START_IMG, caption=pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
+            bot.send_photo(
+                chat_id, 
+                config.START_IMG, 
+                caption=pm_text, 
+                reply_markup=markup, 
+                parse_mode='HTML', 
+                message_effect_id=config.EFFECT_FIRE
+            )
         except:
             bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
     else:
-        # Group Start Logic
-        group_name = html.escape(message.chat.title)
+        # Group Start logic
         group_text = config.GROUP_START_MSG.format(group_name=group_name)
         markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
         bot.send_message(chat_id, group_text, reply_markup=markup, parse_mode='HTML')
 
 # ==========================================
-# 👇 OTHER COMMANDS (PING, STATS, FILTERS, DEL)
+# 👇 ADMIN COMMANDS
 # ==========================================
 
 @bot.message_handler(commands=['ping'])
@@ -103,7 +78,7 @@ def stats_cmd(message):
 def list_filters(message):
     if not db.is_admin(message.from_user.id): return
     fs = db.get_all_filters_list()
-    if not fs: return bot.reply_to(message, "📂 Database Khali!")
+    if not fs: return bot.reply_to(message, "📂 Database Khali Hai!")
     txt = "📂 <b>Filters:</b>\n\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
     bot.reply_to(message, txt[:4000], parse_mode='HTML')
 
@@ -122,9 +97,3 @@ def delete_filter_cmd(message):
         bot.reply_to(message, f"🗑️ Deleted: <code>{target}</code>", parse_mode='HTML')
     else:
         bot.reply_to(message, "❌ Filter nahi mila.")
-
-@bot.callback_query_handler(func=lambda call: call.data == "hard_del_all_filters")
-def handle_del_all(call):
-    if not db.is_admin(call.from_user.id): return
-    db.delete_all_filters()
-    bot.edit_message_text("🗑️ <b>All filters deleted!</b>", call.message.chat.id, call.message.message_id, parse_mode='HTML')
