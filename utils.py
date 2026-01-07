@@ -1,49 +1,83 @@
-# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
-# This Bot Created By: @AniReal_Support! 
+### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
+### ==========================★========================== ###
+### ---------- Created By UNRATED CODER ™ TEAM ---------- ###
+###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
+### ==========================★========================== ###
+
 import requests
 import config
 from bot_instance import bot
 
-def get_anime_info(name):
-    """MAL se anime details aur HD posters fetch karne ke liye (English Priority)"""
+def search_anilist(name):
+    """Multiple anime results ki list nikalne ke liye"""
+    query = '''
+    query ($search: String) {
+      Page (perPage: 10) {
+        media (search: $search, type: ANIME) {
+          id
+          format
+          title {
+            english
+            romaji
+          }
+        }
+      }
+    }
+    '''
+    variables = {'search': name}
+    url = 'https://graphql.anilist.co'
     try:
-        # Jikan API Call
-        res = requests.get(f"https://api.jikan.moe/v4/anime?q={name}&limit=1").json()
-        if res['data']:
-            d = res['data'][0]
-            
-            # --- ENGLISH TITLE LOGIC ---
-            # Pehle Official English title dekhega, agar nahi mila toh default title
-            title = d.get('title_english') or d.get('title', 'N/A')
-            
-            episodes = d.get('episodes', 'N/A')
-            season = f"{d.get('season', 'N/A')} {d.get('year', '')}".strip()
-            genres = ", ".join([g['name'] for g in d.get('genres', [])])
-            
-            # Best available quality JPG image
-            poster = d['images']['jpg']['large_image_url']
-            
-            # Aapka Stylish Caption Style
-            caption = (
-                f"<b>🔰 {title} </b>\n"
-                f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"‣ Episodes: {episodes}\n"
-                f"‣ Season: {season}\n"
-                f"‣ Quality: Multiple\n"
-                f"‣ Audio: हिंदी (Hindi) #Official\n"
-                f"‣ Genres: {genres}\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
-            )
-            return {"title": title, "poster": poster, "caption": caption}
-    except Exception as e:
-        print(f"MAL Error: {e}")
+        response = requests.post(url, json={'query': query, 'variables': variables})
+        data = response.json()
+        return data['data']['Page']['media']
+    except:
+        return []
+
+def get_anime_details(anilist_id):
+    """ID se specific anime ki full details nikalne ke liye"""
+    query = '''
+    query ($id: Int) {
+      Media (id: $id, type: ANIME) {
+        title {
+          english
+          romaji
+        }
+        episodes
+        season
+        seasonYear
+        genres
+        coverImage {
+          extraLarge
+        }
+      }
+    }
+    '''
+    variables = {'id': anilist_id}
+    url = 'https://graphql.anilist.co'
+    try:
+        response = requests.post(url, json={'query': query, 'variables': variables})
+        d = response.json()['data']['Media']
+        
+        title = d['title']['english'] or d['title']['romaji'] or "N/A"
+        episodes = d.get('episodes') or "N/A"
+        season = f"{d.get('season') or 'N/A'} {d.get('seasonYear') or ''}".strip().lower()
+        genres = ", ".join(d.get('genres', []))
+        poster = d['coverImage']['extraLarge']
+        
+        caption = (
+            f"<b>🔰 {title} </b>\n"
+            f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
+            f"‣ Episodes: {episodes}\n"
+            f"‣ Season: {season}\n"
+            f"‣ Quality: Multiple\n"
+            f"‣ Audio: हिंदी (Hindi) #Official\n"
+            f"‣ Genres: {genres}\n"
+            f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
+        )
+        return {"title": title, "poster": poster, "caption": caption}
+    except:
         return None
 
 def send_log(text):
-    """Log channel mein reports bhejne ke liye"""
-    try:
-        bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}", parse_mode='HTML')
-    except Exception as e:
-        print(f"Log Error: {e}")
-
-# Join & Support Us! @DogeshBhai_Pure_Bot
+    try: bot.send_message(config.LOG_CHANNEL_ID, f"📑 <b>SYSTEM LOG:</b>\n{text}", parse_mode='HTML')
+    except: pass
