@@ -1,5 +1,6 @@
 import time
 import os
+import is 
 import html
 from bot_instance import bot
 import config
@@ -62,12 +63,41 @@ def stats_cmd(message):
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return
+
     fs = db.get_all_filters_list()
-    if not fs: return bot.reply_to(message, "📂 Database Khali Hai!")
-    txt = "📂 <b>Available Filters:</b>\n\n" + "\n".join([f"• <code>{x['keyword']}</code>" for x in fs])
-    bot.reply_to(message, txt[:4000])
-# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
+    if not fs:
+        return bot.reply_to(message, "📂 Database is empty!")
+
+    lines = []
+    for x in fs:
+        keyword = str(x['keyword'])
+        lines.append(keyword)
+
+    full_text = "\n".join(lines)
+
+    # ---------- CASE 1: SHORT LIST (SEND MESSAGE) ----------
+    if len(full_text) <= 3800:
+        safe_lines = [f"• <code>{html.escape(k)}</code>" for k in lines]
+        txt = "📂 <b>Available Filters:</b>\n\n" + "\n".join(safe_lines)
+
+        return bot.reply_to(
+            message,
+            txt,
+            parse_mode="HTML"
+        )
+
+    # ---------- CASE 2: LARGE LIST (SEND FILE) ----------
+    file_content = "AVAILABLE FILTERS\n\n" + full_text
+    file = io.BytesIO(file_content.encode("utf-8"))
+    file.name = "filters_list.txt"
+
+    bot.send_document(
+        message.chat.id,
+        file,
+        caption="📂 Too many filters to display.\nHere is the full list as a file."
+    )# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
 # This Bot Created By: @AniReal_Support!
 
 @bot.message_handler(commands=['del_filter'])
