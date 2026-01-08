@@ -46,5 +46,6 @@ GROUP_START_MSG = (
     "Mᴀᴋᴇ sᴜʀᴇ I ᴀᴍ Aᴅᴍɪɴ ʜᴇʀᴇ! 🚀"
 )
 
-
+HELP_MSG = "📖 <b>Help Guide:</b>\n\n1. Use /search to find anime.\n2. Join channels to unlock content.\n3. Contact admin if needed."
+ABOUT_MSG = "🤖 <b>About Bot:</b>\n\nThis bot is created by UNRATED CODER team.\nStay tuned for updates!"
 # Join & Support Us! @DogeshBhai_Pure_Bot
