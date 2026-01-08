@@ -46,6 +46,6 @@ GROUP_START_MSG = (
     "Mᴀᴋᴇ sᴜʀᴇ I ᴀᴍ Aᴅᴍɪɴ ʜᴇʀᴇ! 🚀"
 )
 
-HELP_MSG = "📖 <b>Help Guide:</b>\n\n1. Use /search to find anime.\n2. Join channels to unlock content.\n3. Contact admin if needed."
-ABOUT_MSG = "🤖 <b>About Bot:</b>\n\nThis bot is created by UNRATED CODER team.\nStay tuned for updates!"
+HELP_MSG = "<b>How It Works</b>\n\n<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
+ABOUT_MSG = "<b>About This Bot</b>\n\n<blockquote><b>This bot is fast, secure, and reliable, providing access only to official and verified Telegram channels. There is no risk of device hacking or any unauthorized activity.</b>\n\n<b>The system is optimized for speed and privacy, ensuring a smooth and safe experience for every user.</b>\n<b>For quick access, you can request an index by sending a single word (for example:</b> <i>A</i>) <b>and receive the related index instantly.</b></blockquote>\n\n<b>Developed By:</b> <i>@UNRATED_CODER</i>"
 # Join & Support Us! @DogeshBhai_Pure_Bot
