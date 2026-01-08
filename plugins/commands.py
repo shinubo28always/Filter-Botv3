@@ -58,16 +58,31 @@ def start_handler(message):
         except:
             bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
     else:
-    # Group Start logic
-    group_text = config.GROUP_START_MSG.format(group_name=group_name)
-    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🤖 PM Mᴇ", url=f"https://t.me/{bot.get_me().username}?start=help"))
-    
-    try:
-        # User ko reply (mention) karke bhejega
-        bot.reply_to(message, group_text, reply_markup=markup, parse_mode='HTML')
-    except:
-        # Agar user ne command delete kar diya, toh normal message bhejega
-        bot.send_message(chat_id, group_text, reply_markup=markup, parse_mode='HTML')
+        # Group Start logic
+        group_text = config.GROUP_START_MSG.format(group_name=group_name)
+        markup = types.InlineKeyboardMarkup().add(
+            types.InlineKeyboardButton(
+                "🤖 PM Me",
+                url=f"https://t.me/{bot.get_me().username}?start=help"
+            )
+        )
+
+        try:
+            # User ko reply (mention) karke bhejega
+            bot.reply_to(
+                message,
+                group_text,
+                reply_markup=markup,
+                parse_mode='HTML'
+            )
+        except:
+            # Agar command delete ho chuki ho
+            bot.send_message(
+                chat_id,
+                group_text,
+                reply_markup=markup,
+                parse_mode='HTML'
+        )
 
 # ==========================================
 # 👇 ADMIN COMMANDS
