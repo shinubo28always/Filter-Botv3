@@ -126,18 +126,6 @@ def toggle_fsub_mode(chat_id):
     fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": new_mode}})
     return new_mode
 
-# ---- MAINTENANCE MODE ----
-
-def set_maintenance(status: bool):
-    db.config.update_one(
-        {"_id": "maintenance"},
-        {"$set": {"status": status}},
-        upsert=True
-    )
-
-def is_maintenance():
-    data = db.config.find_one({"_id": "maintenance"})
-    return data.get("status", False) if data else False
     
 # ==========================================
 # 📩 REQUEST LOGIC
