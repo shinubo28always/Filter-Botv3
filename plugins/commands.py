@@ -167,49 +167,23 @@ def handle_del_all_callback(call):
         bot.delete_message(call.message.chat.id, call.message.message_id)
 
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
-### --------> https://t.me/UNRATED_CODER <-------- ###
-
+### --------> https://t.me/UNRATED_CODER <-------- 
 
 @bot.message_handler(commands=['id'])
-def send_full_id_info(message):
-    user = message.from_user
+def send_id_info(message):
+    # Target user: reply er user nai hoile command chalano user
+    target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
     chat = message.chat
 
-    # User info
-    uid = user.id
-    first_name = html.escape(user.first_name or "")
-    last_name = html.escape(user.last_name or "")
-    full_name = f"{first_name} {last_name}".strip()
-    username = f"@{user.username}" if user.username else "N/A"
-    mention = f'<a href="tg://user?id={uid}">{full_name}</a>'
+    uid = target_user.id
+    first_name = html.escape(target_user.first_name or "")
+    mention = f'<a href="tg://user?id={uid}">{first_name}</a>'
 
-    # Chat info
-    chat_id = chat.id
-    chat_title = html.escape(chat.title or chat.first_name or "this chat")
-    chat_link = f"https://t.me/{chat.username}" if getattr(chat, "username", None) else None
+    text = f"{mention}'s ID: <code>{uid}</code>"
 
-    # Message info
-    msg_id = message.message_id
-    if str(chat.id).startswith("-100"):  # supergroup
-        msg_link = f"https://t.me/c/{str(chat.id)[4:]}/{msg_id}"
-    else:
-        msg_link = None
-
-    # Telegram DC ID (try fallback)
-    dc_id = getattr(user, 'dc_id', 'N/A')
-
-    # Build formatted text
-    text = "🆔 <b>User & Message Info</b> 🆔\n\n"
-    if msg_link:
-        text += f"[Message ID:]({msg_link}) <code>{msg_id}</code>\n"
-    else:
-        text += f"Message ID: <code>{msg_id}</code>\n"
-
-    text += f"Name: {mention}\n"
-    text += f"Username: <code>{username}</code>\n"
-    text += f"User ID: <code>{uid}</code>\n"
-    text += f"DC ID: <code>{dc_id}</code>\n"
-    text += f"Chat Name: <b>{chat_title}</b>\n"
-    text += f"Chat ID: <code>{chat_id}</code>"
+    # Group info
+    if chat.type in ['group', 'supergroup']:
+        chat_name = html.escape(chat.title or "this group")
+        text += f"\nGroup: <b>{chat_name}</b>\nGroup ID: <code>{chat.id}</code>"
 
     bot.reply_to(message, text, parse_mode="HTML")
