@@ -1,5 +1,6 @@
 import time
-import os 
+import os
+import io
 import html
 from bot_instance import bot
 import config
