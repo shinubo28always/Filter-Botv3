@@ -169,52 +169,47 @@ def handle_del_all_callback(call):
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
 ### --------> https://t.me/UNRATED_CODER <-------- ###
 
-@bot.message_handler(commands=['maintenance'])
-def maintenance_cmd(message):
-    if not db.is_admin(message.from_user.id):
-        return
 
-    args = message.text.split(maxsplit=1)
+@bot.message_handler(commands=['id'])
+def send_full_id_info(message):
+    user = message.from_user
+    chat = message.chat
 
-    if len(args) < 2:
-        status = "ON" if db.is_maintenance() else "OFF"
-        return bot.reply_to(
-            message,
-            f"🛠 <b>Maintenance Mode</b>\n\n"
-            f"Current status: <code>{status}</code>\n\n"
-            f"Usage:\n"
-            f"<code>/maintenance on</code>\n"
-            f"<code>/maintenance off</code>",
-            parse_mode="HTML"
-        )
+    # User info
+    uid = user.id
+    first_name = html.escape(user.first_name or "")
+    last_name = html.escape(user.last_name or "")
+    full_name = f"{first_name} {last_name}".strip()
+    username = f"@{user.username}" if user.username else "N/A"
+    mention = f'<a href="tg://user?id={uid}">{full_name}</a>'
 
-    cmd = args[1].lower()
+    # Chat info
+    chat_id = chat.id
+    chat_title = html.escape(chat.title or chat.first_name or "this chat")
+    chat_link = f"https://t.me/{chat.username}" if getattr(chat, "username", None) else None
 
-    if cmd == "on":
-        db.set_maintenance(True)
-        bot.reply_to(
-            message,
-            "🛠 <b>Maintenance Enabled</b>\n\n"
-            "Bot is now under maintenance.\n"
-            "Users will be blocked temporarily.",
-            parse_mode="HTML"
-        )
-
-    elif cmd == "off":
-        db.set_maintenance(False)
-        bot.reply_to(
-            message,
-            "✅ <b>Maintenance Disabled</b>\n\n"
-            "Bot is live and operational again.",
-            parse_mode="HTML"
-        )
-
+    # Message info
+    msg_id = message.message_id
+    if str(chat.id).startswith("-100"):  # supergroup
+        msg_link = f"https://t.me/c/{str(chat.id)[4:]}/{msg_id}"
     else:
-        bot.reply_to(
-            message,
-            "❌ <b>Invalid option!</b>\n\n"
-            "Use:\n"
-            "<code>/maintenance on</code>\n"
-            "<code>/maintenance off</code>",
-            parse_mode="HTML"
-        )
+        msg_link = None
+
+    # Telegram DC ID (try fallback)
+    dc_id = getattr(user, 'dc_id', 'N/A')
+
+    # Build formatted text
+    text = "🆔 <b>User & Message Info</b> 🆔\n\n"
+    if msg_link:
+        text += f"[Message ID:]({msg_link}) <code>{msg_id}</code>\n"
+    else:
+        text += f"Message ID: <code>{msg_id}</code>\n"
+
+    text += f"Name: {mention}\n"
+    text += f"Username: <code>{username}</code>\n"
+    text += f"User ID: <code>{uid}</code>\n"
+    text += f"DC ID: <code>{dc_id}</code>\n"
+    text += f"Chat Name: <b>{chat_title}</b>\n"
+    text += f"Chat ID: <code>{chat_id}</code>"
+
+    bot.reply_to(message, text, parse_mode="HTML")
