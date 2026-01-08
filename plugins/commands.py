@@ -18,45 +18,88 @@ def start_handler(message):
     uid = message.from_user.id
     chat_id = message.chat.id
     first_name = html.escape(message.from_user.first_name)
-    group_name = html.escape(message.chat.title) if message.chat.title else "this group"
-    
-    # User ko register karein
-    db.add_user(uid)
-    
-    # --- 1. HANDLE DEEP LINKING (REQUEST REDIRECT) ---
-    if message.chat.type == "private" and len(message.text.split()) > 1:
-        if message.text.split()[1] == "request":
-            try:
-                from plugins.request import initiate_request_flow
-                return initiate_request_flow(uid)
-            except: pass
 
-    # --- 2. STICKER ANIMATION ---
+    # Register user
+    db.add_user(uid)
+
+    # Sticker animation
     try:
         stk = bot.send_sticker(chat_id, config.STICKER_ID)
         time.sleep(1.2)
         bot.delete_message(chat_id, stk.message_id)
     except: pass
 
-    # --- 3. START MESSAGE DELIVERY ---
     if message.chat.type == "private":
-        # PM Start logic with Image and Effects
-        pm_text = config.PM_START_MSG.format(first_name=first_name)
+        send_pm_start(chat_id, first_name)
+
+
+def send_pm_start(chat_id, first_name):
+    pm_text = config.PM_START_MSG.format(first_name=first_name)
+
+    markup = types.InlineKeyboardMarkup()
+    # Row 1: Join Updates
+    markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
+    # Row 2: Help | About
+    markup.row(
+        types.InlineKeyboardButton("📖 Help", callback_data="start_help"),
+        types.InlineKeyboardButton("ℹ️ About", callback_data="start_about")
+    )
+    # Row 3: Add Bot to Group
+    markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
+
+    try:
+        bot.send_photo(
+            chat_id,
+            config.START_IMG,
+            caption=pm_text,
+            reply_markup=markup,
+            parse_mode="HTML",
+            message_effect_id=config.EFFECT_FIRE
+        )
+    except:
+        bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode="HTML")
+
+
+# ---------------- CALLBACK HANDLER FOR HELP/ABOUT/BACK ----------------
+@bot.callback_query_handler(func=lambda call: call.data in ["start_help", "start_about", "start_back"])
+def handle_start_callbacks(call):
+    first_name = html.escape(call.from_user.first_name)
+    chat_id = call.message.chat.id
+    msg_id = call.message.message_id
+
+    if call.data == "start_help":
+        text = config.HELP_MSG
+        markup = types.InlineKeyboardMarkup()
+        markup.row(
+            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back"),
+            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about")
+        )
+
+    elif call.data == "start_about":
+        text = config.ABOUT_MSG
+        markup = types.InlineKeyboardMarkup()
+        markup.row(
+            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back"),
+            types.InlineKeyboardButton("📖 Help", callback_data="start_help")
+        )
+
+    elif call.data == "start_back":
+        text = config.PM_START_MSG.format(first_name=first_name)
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
-        markup.add(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
-        
-        try:
-            bot.send_photo(
-                chat_id, 
-                config.START_IMG, 
-                caption=pm_text, 
-                reply_markup=markup, 
-                parse_mode='HTML', 
-                message_effect_id=config.EFFECT_FIRE
-            )
-        except:
-            bot.send_message(chat_id, pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
+        markup.row(
+            types.InlineKeyboardButton("📖 Help", callback_data="start_help"),
+            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about")
+        )
+        markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
+
+    bot.edit_message_text(
+        chat_id=chat_id,
+        message_id=msg_id,
+        text=text,
+        reply_markup=markup,
+        parse_mode="HTML"
+    )
     else:
         # Group Start logic
         group_text = config.GROUP_START_MSG.format(group_name=group_name)
