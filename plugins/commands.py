@@ -168,3 +168,53 @@ def handle_del_all_callback(call):
 
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
 ### --------> https://t.me/UNRATED_CODER <-------- ###
+
+@bot.message_handler(commands=['maintenance'])
+def maintenance_cmd(message):
+    if not db.is_admin(message.from_user.id):
+        return
+
+    args = message.text.split(maxsplit=1)
+
+    if len(args) < 2:
+        status = "ON" if db.is_maintenance() else "OFF"
+        return bot.reply_to(
+            message,
+            f"🛠 <b>Maintenance Mode</b>\n\n"
+            f"Current status: <code>{status}</code>\n\n"
+            f"Usage:\n"
+            f"<code>/maintenance on</code>\n"
+            f"<code>/maintenance off</code>",
+            parse_mode="HTML"
+        )
+
+    cmd = args[1].lower()
+
+    if cmd == "on":
+        db.set_maintenance(True)
+        bot.reply_to(
+            message,
+            "🛠 <b>Maintenance Enabled</b>\n\n"
+            "Bot is now under maintenance.\n"
+            "Users will be blocked temporarily.",
+            parse_mode="HTML"
+        )
+
+    elif cmd == "off":
+        db.set_maintenance(False)
+        bot.reply_to(
+            message,
+            "✅ <b>Maintenance Disabled</b>\n\n"
+            "Bot is live and operational again.",
+            parse_mode="HTML"
+        )
+
+    else:
+        bot.reply_to(
+            message,
+            "❌ <b>Invalid option!</b>\n\n"
+            "Use:\n"
+            "<code>/maintenance on</code>\n"
+            "<code>/maintenance off</code>",
+            parse_mode="HTML"
+        )
