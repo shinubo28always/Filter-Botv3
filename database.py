@@ -59,8 +59,14 @@ def del_group(chat_id):
 
 # --- FILTERS & INDEXING ---
 def add_filter(keyword, data):
-    if 'type' not in data: data['type'] = 'anime'
-    filters.update_one({"keyword": keyword.lower().strip()}, {"$set": data}, upsert=True)
+    if 'type' not in data: 
+        data['type'] = 'anime'
+    
+    filters.update_one(
+        {"keyword": keyword.lower().strip()}, 
+        {"$set": data}, 
+        upsert=True
+)
 
 def get_filter(keyword):
     return filters.find_one({"keyword": keyword.lower().strip()})
