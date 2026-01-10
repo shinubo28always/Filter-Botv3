@@ -21,6 +21,7 @@ import plugins.request
 import plugins.broadcast
 import plugins.auth
 import plugins.setup
+import plugins.slots
 import plugins.search
 
 app = Flask(__name__)
