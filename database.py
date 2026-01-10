@@ -41,4 +41,8 @@ def get_all_filters_list(): return list(filters.find({}, {"keyword": 1, "title":
 
 def add_fsub_chnl(chat_id, title, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": mode}}, upsert=True)
 def get_all_fsub(): return list(fsub_col.find())
-def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_count
+def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_co
+def get_index_results(letter):
+    """MongoDB regex use karke fast results nikalna"""
+    query = {"keyword": {"$regex": f"^{letter.lower()}"}}
+    return list(filters.find(query))
