@@ -146,20 +146,36 @@ def handle_callbacks(call):
             except: pass
             send_final_result(call.message, filter_data, mid)
 
-# ---------------- FINAL RESULT (TIMERS FIXED) ----------------
+### ---------------- FINAL RESULT (TIMERS FIXED) ------------------- ###
+
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
     del_time = 120 if is_slot else 300 
+    
     try:
-        if is_slot:
-            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_to_message_id=r_mid)
-        else:
-            invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
-            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
-            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+        markup = types.InlineKeyboardMarkup()
         
-        # Start background deletion
+        if is_slot:
+            # --- CUSTOM SLOT BUTTONS LOGIC ---
+            custom_btns = data.get('custom_buttons', [])
+            for btn in custom_btns:
+                markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
+            
+            res_msg = bot.copy_message(
+                chat_id=message.chat.id, 
+                from_chat_id=config.DB_CHANNEL_ID, 
+                message_id=int(data['db_mid']), 
+                reply_markup=markup if custom_btns else None, # Buttons tabhi add honge agar saved hon
+                reply_to_message_id=r_mid
+            )
+        else:
+            # --- ANIME FILTER LOGIC (Same as before) ---
+            invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
+            markup.add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
+            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+            
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
+        
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
 
