@@ -1,10 +1,15 @@
 ### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
+### ==========================★========================== ###
+### ---------- Created By UNRATED CODER ™ TEAM ---------- ###
+###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
+### ==========================★========================== ###
+
 import time
 import threading
 import config
 import database as db
 from bot_instance import bot
-from telebot import types
+from telebot import types, apihelper
 from thefuzz import process, fuzz
 
 ITEMS_PER_PAGE = 5   
@@ -18,6 +23,7 @@ def delete_msg_timer(chat_id, message_ids, delay):
             except: pass
     threading.Thread(target=delayed_delete).start()
 
+# ---------------- MESSAGE HANDLER ----------------
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
     if message.text.startswith("/"): return
@@ -28,20 +34,22 @@ def search_handler(message):
     # 1. FSUB CHECK
     if message.chat.type == "private":
         all_fsubs = db.get_all_fsub()
-        missing_normals = [f for f in all_fsubs if f.get("mode") != "request"]
-        request_fsubs = [f for f in all_fsubs if f.get("mode") == "request"]
-        joined_count = 0
-        for f in missing_normals:
+        missing = []
+        for f in all_fsubs:
+            if f.get("mode") == "request": continue
             try:
                 st = bot.get_chat_member(int(f['_id']), uid).status
-                if st in ['member', 'administrator', 'creator']: joined_count += 1
-            except: pass
-        if joined_count < len(missing_normals):
-            return send_fsub_message(message, missing_normals, request_fsubs)
+                if st not in ['member', 'administrator', 'creator']: missing.append(f)
+            except: missing.append(f)
+        if missing:
+            return send_fsub_message(message, missing, [f for f in all_fsubs if f.get("mode") == "request"])
 
-    # 2. ALPHABET INDEX (FAST)
+    # 2. ALPHABET INDEX (NOW FAST WITH PLACEHOLDER)
     if len(query) == 1 and query.isalpha():
-        send_index_page(message.chat.id, query, 1, message.message_id, uid, is_new=True)
+        # Send Placeholder immediately
+        wait_msg = bot.reply_to(message, f"🔍 <b>Indexing '{query.upper()}'... Please wait.</b>")
+        # Fetch and Edit
+        send_index_page(message.chat.id, query, 1, message.message_id, uid, is_new=False, edit_mid=wait_msg.message_id)
         return
 
     # 3. SEARCH ENGINE
@@ -49,7 +57,11 @@ def search_handler(message):
     if not choices: return
     matches = process.extract(query, choices, limit=15, scorer=fuzz.token_sort_ratio)
     best_matches = [m for m in matches if m[1] >= FUZZY_THRESHOLD]
-    if not best_matches: return
+    
+    if not best_matches:
+        if message.chat.type == "private":
+            bot.reply_to(message, f"❌ <b>No results found!</b>\nSearch yourself @UNRATED_CODER")
+        return
 
     if best_matches[0][1] >= 95:
         data = db.get_filter(best_matches[0][0])
@@ -68,19 +80,22 @@ def search_handler(message):
             s_msg = bot.reply_to(message, "🧐 <b>Did you mean:</b>", reply_markup=markup)
             delete_msg_timer(message.chat.id, [s_msg.message_id], 300)
 
+# ---------------- FAST INDEX GENERATOR ----------------
 def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False, edit_mid=None):
-    all_kws = db.get_all_keywords()
-    filtered_kws = [kw for kw in all_kws if kw.startswith(letter)]
+    # Use optimized DB function
+    results = db.get_index_results(letter)
+    
     unique_results = []
     seen_titles = set()
-    for kw in filtered_kws:
-        data = db.get_filter(kw)
-        if data and data['title'] not in seen_titles:
-            unique_results.append({"kw": kw, "title": data['title']})
-            seen_titles.add(data['title'])
+    for res in results:
+        if res['title'] not in seen_titles:
+            unique_results.append({"kw": res['keyword'], "title": res['title']})
+            seen_titles.add(res['title'])
 
     if not unique_results:
-        if is_new: bot.send_message(chat_id, f"📂 No results for <b>'{letter.upper()}'</b>")
+        txt = f"📂 No results for <b>'{letter.upper()}'</b>"
+        if edit_mid: bot.edit_message_text(txt, chat_id, edit_mid)
+        else: bot.send_message(chat_id, txt)
         return
 
     total_pages = (len(unique_results) + ITEMS_PER_PAGE - 1) // ITEMS_PER_PAGE
@@ -97,16 +112,19 @@ def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False, edit
     if page < total_pages: nav_row.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}"))
     markup.row(*nav_row)
 
-    text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_results)}</code>"
+    text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal: <code>{len(unique_results)}</code>"
     try:
-        if is_new: bot.send_message(chat_id, text, reply_markup=markup, reply_to_message_id=original_mid)
-        else: bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
+        if edit_mid: bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
+        else: bot.send_message(chat_id, text, reply_markup=markup, reply_to_message_id=original_mid)
     except: pass
 
+# ---------------- CALLBACK HANDLER (STABLE & RESPONSIVE) ----------------
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
-    # Answer immediately to stop loading spinner
-    bot.answer_callback_query(call.id)
+    # 1. IMMEDIATE ANSWER (Fixes the 5-6 click lag)
+    try: bot.answer_callback_query(call.id)
+    except: pass
+    
     clicker_id = call.from_user.id
     data = call.data.split("|")
 
@@ -114,19 +132,21 @@ def handle_callbacks(call):
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
         if clicker_id != ouid and not db.is_admin(clicker_id):
             return bot.answer_callback_query(call.id, "⚠️ Search yourself @UNRATED_CODER", show_alert=True)
-        send_index_page(call.message.chat.id, letter, page, original_mid, ouid, is_new=False, edit_mid=call.message.message_id)
+        send_index_page(call.message.chat.id, letter, page, original_mid, ouid, edit_mid=call.message.message_id)
         return
 
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
         if clicker_id != ouid and not db.is_admin(clicker_id):
             return bot.answer_callback_query(call.id, "⚠️ Not your request @UNRATED_CODER", show_alert=True)
+        
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
         if filter_data:
             try: bot.delete_message(call.message.chat.id, call.message.message_id)
             except: pass
             send_final_result(call.message, filter_data, mid)
 
+# ---------------- FINAL RESULT (TIMERS FIXED) ----------------
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
     del_time = 120 if is_slot else 300 
@@ -137,6 +157,8 @@ def send_final_result(message, data, r_mid):
             invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
             markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
             res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+        
+        # Start background deletion
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
@@ -156,4 +178,4 @@ def send_fsub_message(message, missing_normals, request_fsubs):
     markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
     bot.reply_to(message, "⚠️ <b>Access Restricted!</b>\nJoin our channels to view results.", reply_markup=markup)
 
-### Join on Telegram Channel https://t.me/UNRATED_CODER ###
+### Support Us @UNRATED_CODER ###
