@@ -31,7 +31,6 @@ def del_group(chat_id): groups.delete_one({"_id": str(chat_id)})
 def get_all_groups(): return [g['_id'] for g in groups.find()]
 
 def add_filter(keyword, data):
-    if 'type' not in data: data['type'] = 'anime'
     filters.update_one({"keyword": keyword.lower().strip()}, {"$set": data}, upsert=True)
 
 def get_filter(keyword): return filters.find_one({"keyword": keyword.lower().strip()})
