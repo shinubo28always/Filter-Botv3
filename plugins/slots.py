@@ -13,12 +13,14 @@ def add_slot_handler(message):
     
     keyword = parts[1].lower().strip()
     markup = types.ForceReply(selective=True)
-    msg = bot.reply_to(message, f"📥 <b>Manual Slot Setup</b>\nKeyword: <code>{keyword}</code>\n\nAb wo <b>Message (Text/Media)</b> bhejein jo aap set karna chahte hain:", reply_markup=markup)
+    msg = bot.reply_to(message, f"📥 <b>Slot Setup:</b> <code>{keyword}</code>\n\nAb wo message bhejein jise aap save karna chahte hain.\n(Text, Media, aur Buttons sab copy honge)", reply_markup=markup)
     bot.register_next_step_handler(msg, save_slot_content, keyword)
 
 def save_slot_content(message, keyword):
     try:
+        # copy_message function inline buttons ko bhi saath le jata hai agar bot admin hai
         db_msg = bot.copy_message(config.DB_CHANNEL_ID, message.chat.id, message.message_id)
+        
         data = {
             "title": f"Manual: {keyword.title()}",
             "db_mid": db_msg.message_id,
@@ -27,4 +29,4 @@ def save_slot_content(message, keyword):
         db.add_filter(keyword, data)
         bot.reply_to(message, f"✅ <b>Slot Added!</b>\nKeyword: <code>{keyword}</code>")
     except Exception as e:
-        bot.reply_to(message, f"❌ <b>Error!</b>\n<code>{str(e)}</code>")
+        bot.reply_to(message, f"❌ <b>Error:</b> <code>{str(e)}</code>")
