@@ -41,9 +41,14 @@ PM_START_MSG = (
     "Type an anime name to start.</b></blockquote>"
 )
 GROUP_START_MSG = (
-    "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ ɪɴ {group_name}.</b>\n\n"
-    "Jᴜsᴛ ᴛʏᴘᴇ ᴛʜᴇ Aɴɪᴍᴇ Nᴀᴍᴇ ᴛᴏ ɢᴇᴛ ʟɪɴᴋs.\n"
-    "Mᴀᴋᴇ sᴜʀᴇ I ᴀᴍ Aᴅᴍɪɴ ʜᴇʀᴇ! 🚀"
+    "👋 <b>Hello {group_name}</b>\n\n"
+    "<blockquote><b>"
+    "This bot supports <u>Index Finding</u>.\n"
+    "If you type only one word, search will be bypassed and index results will be shown.\n\n"
+    "You can search any anime by sending its name.\n"
+    "If an anime is not available, you can request it using the /request command.\n\n"
+    "Make sure I have Admin permission to work properly."
+    "</b></blockquote>"
 )
 
 HELP_MSG = "<b>How It Works</b>\n\n<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
