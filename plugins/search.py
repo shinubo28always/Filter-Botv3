@@ -44,11 +44,9 @@ def search_handler(message):
         if missing:
             return send_fsub_message(message, missing, [f for f in all_fsubs if f.get("mode") == "request"])
 
-    # 2. ALPHABET INDEX (NOW FAST WITH PLACEHOLDER)
+    # 2. ALPHABET INDEX
     if len(query) == 1 and query.isalpha():
-        # Send Placeholder immediately
         wait_msg = bot.reply_to(message, f"🔍 <b>Indexing '{query.upper()}'... Please wait.</b>")
-        # Fetch and Edit
         send_index_page(message.chat.id, query, 1, message.message_id, uid, is_new=False, edit_mid=wait_msg.message_id)
         return
 
@@ -66,25 +64,24 @@ def search_handler(message):
     if best_matches[0][1] >= 95:
         data = db.get_filter(best_matches[0][0])
         send_final_result(message, data, message.message_id)
-    else:
-        markup = types.InlineKeyboardMarkup()
-        seen = set()
-        for b in best_matches:
-            row = db.get_filter(b[0])
-            if row and row['title'] not in seen:
-                cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
-                markup.add(types.InlineKeyboardButton(f"🎬 {row['title']}", callback_data=cb))
-                seen.add(row['title'])
-                if len(seen) >= 5: break 
-        if seen:
-            s_msg = bot.reply_to(message, "🧐 <b>Did you mean:</b>", reply_markup=markup)
-            delete_msg_timer(message.chat.id, [s_msg.message_id], 300)
+        return
+
+    markup = types.InlineKeyboardMarkup()
+    seen = set()
+    for b in best_matches:
+        row = db.get_filter(b[0])
+        if row and row['title'] not in seen:
+            cb = f"fuz|{b[0][:20]}|{message.message_id}|{uid}"
+            markup.add(types.InlineKeyboardButton(f"🎬 {row['title']}", callback_data=cb))
+            seen.add(row['title'])
+            if len(seen) >= 5: break 
+    if seen:
+        s_msg = bot.reply_to(message, "🧐 <b>Did you mean:</b>", reply_markup=markup)
+        delete_msg_timer(message.chat.id, [s_msg.message_id], 300)
 
 # ---------------- FAST INDEX GENERATOR ----------------
 def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False, edit_mid=None):
-    # Use optimized DB function
     results = db.get_index_results(letter)
-    
     unique_results = []
     seen_titles = set()
     for res in results:
@@ -118,27 +115,40 @@ def send_index_page(chat_id, letter, page, original_mid, uid, is_new=False, edit
         else: bot.send_message(chat_id, text, reply_markup=markup, reply_to_message_id=original_mid)
     except: pass
 
-# ---------------- CALLBACK HANDLER (STABLE & RESPONSIVE) ----------------
+# ---------------- CALLBACK HANDLER (POPUP FIXED) ----------------
 @bot.callback_query_handler(func=lambda call: True)
 def handle_callbacks(call):
-    # 1. IMMEDIATE ANSWER (Fixes the 5-6 click lag)
-    try: bot.answer_callback_query(call.id)
-    except: pass
-    
     clicker_id = call.from_user.id
     data = call.data.split("|")
 
+    # --- SECURITY CHECK (Owner or Original Searcher Only) ---
+    # Hum pehle check karenge, phir answer karenge
+    if data[0] in ["ind", "fuz"]:
+        # Index data[3] is uid, Fuzzy data[3] is uid
+        try:
+            original_uid = int(data[3])
+            if clicker_id != original_uid and not db.is_admin(clicker_id):
+                # AGAR DUSRA BANDA HAI TOH YAHAN ALERT MILEGA
+                return bot.answer_callback_query(
+                    call.id, 
+                    "⚠️ Oops! That’s not your result. Go to search yourself! @UNRATED_CODER", 
+                    show_alert=True
+                )
+        except: pass
+
+    # Agar Permission hai, toh loading spinner hatao
+    try: bot.answer_callback_query(call.id)
+    except: pass
+
+    # 1. INDEX NAVIGATION
     if data[0] == "ind":
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
-        if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Oops! That’s not your result. Go to search yourself!", show_alert=True)
         send_index_page(call.message.chat.id, letter, page, original_mid, ouid, edit_mid=call.message.message_id)
         return
 
+    # 2. RESULT HANDLER
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
-        if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Oops! That’s not your result. Go to search yourself!", show_alert=True)
         
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
         if filter_data:
@@ -146,36 +156,22 @@ def handle_callbacks(call):
             except: pass
             send_final_result(call.message, filter_data, mid)
 
-### ---------------- FINAL RESULT (TIMERS FIXED) ------------------- ###
+# ---------------- UTILS ----------------
 
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
     del_time = 120 if is_slot else 300 
-    
     try:
         markup = types.InlineKeyboardMarkup()
-        
         if is_slot:
-            # --- CUSTOM SLOT BUTTONS LOGIC ---
             custom_btns = data.get('custom_buttons', [])
-            for btn in custom_btns:
-                markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
-            
-            res_msg = bot.copy_message(
-                chat_id=message.chat.id, 
-                from_chat_id=config.DB_CHANNEL_ID, 
-                message_id=int(data['db_mid']), 
-                reply_markup=markup if custom_btns else None, # Buttons tabhi add honge agar saved hon
-                reply_to_message_id=r_mid
-            )
+            for btn in custom_btns: markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
+            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup if custom_btns else None, reply_to_message_id=r_mid)
         else:
-            # --- ANIME FILTER LOGIC (Same as before) ---
             invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
             markup.add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
             res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
-            
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
-        
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
 
@@ -192,6 +188,6 @@ def send_fsub_message(message, missing_normals, request_fsubs):
             markup.add(types.InlineKeyboardButton(f"✨ Request to Join ✨", url=invite.invite_link))
         except: pass
     markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\n<blockquote><b>To view search results, please join our official channels.\nOnce joined, you can use the bot freely and search for any anime instantly.</b></blockquote>", reply_markup=markup)
+    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\n<blockquote><b>To view search results, please join our official channels.</b></blockquote>", reply_markup=markup)
 
 ### Support Us @UNRATED_CODER ###
