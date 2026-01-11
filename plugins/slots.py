@@ -8,6 +8,10 @@ import html
 # Temporary state tracking
 TEMP_SLOTS = {}
 
+def safe_delete(chat_id, msg_id):
+    try: bot.delete_message(chat_id, msg_id)
+    except: pass
+
 @bot.message_handler(commands=['add_slot'])
 def add_slot_start(message):
     if not db.is_admin(message.from_user.id): return
@@ -22,19 +26,25 @@ def add_slot_start(message):
         "kw": kw,
         "buttons": [],
         "curr_name": None,
-        "curr_url": None
+        "curr_url": None,
+        "dash_mid": None, # Dashboard message ID
+        "prompt_mid": None # Temporary input prompt ID
     }
     
     markup = types.ForceReply(selective=True)
     msg = bot.reply_to(message, f"📤 <b>Step 1: Content Setup</b>\nKeyword: <code>{kw}</code>\n\n<b>Now send the Message (Text/Media) you want to save</b>:", reply_markup=markup)
+    TEMP_SLOTS[uid]['prompt_mid'] = msg.message_id
     bot.register_next_step_handler(msg, process_slot_content)
 
 def process_slot_content(message):
     uid = message.from_user.id
     if uid not in TEMP_SLOTS: return
     
+    # Cleanup Step 1
+    safe_delete(message.chat.id, TEMP_SLOTS[uid]['prompt_mid'])
+    safe_delete(message.chat.id, message.message_id)
+
     try:
-        # DB Channel mein copy karein
         db_msg = bot.copy_message(config.DB_CHANNEL_ID, message.chat.id, message.message_id)
         TEMP_SLOTS[uid]['db_mid'] = db_msg.message_id
         
@@ -44,62 +54,55 @@ def process_slot_content(message):
             types.InlineKeyboardButton("⏩ No, Skip This", callback_data="slot_skip")
         )
         
-        bot.send_message(uid, "❓ <b>Step 2: Buttons Setup</b>\nDo you want to add custom buttons to this filter?", reply_markup=markup)
+        # Ye hamara Main Dashboard ban jayega
+        dash = bot.send_message(uid, "❓ <b>Step 2: Buttons Setup</b>\nDo you want to add custom buttons to this filter?", reply_markup=markup)
+        TEMP_SLOTS[uid]['dash_mid'] = dash.message_id
+        
     except Exception as e:
         bot.send_message(uid, f"❌ <b>Error:</b> {e}")
 
-# --- CALLBACK HANDLERS FOR BUTTON CREATOR ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("slot_") or call.data.startswith("btn_"))
 def handle_slot_callbacks(call):
     uid = call.from_user.id
     if uid not in TEMP_SLOTS:
-        return bot.answer_callback_query(call.id, "Session Expired! Start again.", show_alert=True)
+        return bot.answer_callback_query(call.id, "Session Expired!", show_alert=True)
 
-    # ⏩ SKIP BUTTONS
     if call.data == "slot_skip":
         finalize_slot(call.message, uid)
-        bot.answer_callback_query(call.id, "Saved without buttons!")
 
-    # ➕ START ADDING BUTTONS
     elif call.data == "slot_add_btn" or call.data == "btn_refresh":
         refresh_button_menu(call.message, uid)
 
-    # 🏷️ ADD BUTTON NAME
     elif call.data == "btn_name":
         msg = bot.send_message(uid, "✍️ <b>Send Button Name:</b>", reply_markup=types.ForceReply())
+        TEMP_SLOTS[uid]['prompt_mid'] = msg.message_id
         bot.register_next_step_handler(msg, set_btn_name)
 
-    # 🔗 ADD BUTTON URL
     elif call.data == "btn_url":
-        msg = bot.send_message(uid, "🌐 <b>Send Button URL (https://...):</b>", reply_markup=types.ForceReply())
+        msg = bot.send_message(uid, "🌐 <b>Send Button URL:</b>", reply_markup=types.ForceReply())
+        TEMP_SLOTS[uid]['prompt_mid'] = msg.message_id
         bot.register_next_step_handler(msg, set_btn_url)
 
-    # ✅ ADD MORE (SAVE CURRENT AND PREPARE NEXT)
     elif call.data == "btn_add_more":
         data = TEMP_SLOTS[uid]
         if not data['curr_name'] or not data['curr_url']:
-            return bot.answer_callback_query(call.id, "❌ Please enter both Name and URL first!", show_alert=True)
+            return bot.answer_callback_query(call.id, "❌ Enter Name & URL first!", show_alert=True)
         
         data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
         data['curr_name'] = None
         data['curr_url'] = None
         refresh_button_menu(call.message, uid)
-        bot.answer_callback_query(call.id, "Button added to list!")
 
-    # 💾 FINISH & SAVE
     elif call.data == "btn_save":
         data = TEMP_SLOTS[uid]
-        # Agar koi button process mein hai, use add karein
         if data['curr_name'] and data['curr_url']:
             data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
-        
         finalize_slot(call.message, uid)
 
 def refresh_button_menu(message, uid):
     data = TEMP_SLOTS[uid]
     btn_list_txt = "\n".join([f"🔹 {b['name']}" for b in data['buttons']]) or "None"
-    
-    curr_name = data['curr_name'] if data['curr_name'] else "Not Set"
+    curr_name = data['curr_name'] or "Not Set"
     curr_url = "URL Added..✅" if data['curr_url'] else "Not Set"
     
     txt = (
@@ -108,7 +111,7 @@ def refresh_button_menu(message, uid):
         f"✨ <b>Current Button:</b>\n"
         f"🏷 Name: <code>{curr_name}</code>\n"
         f"🔗 URL: {curr_url}\n\n"
-        "Niche buttons se details bharein:"
+        "Fill details using buttons below:"
     )
     
     markup = types.InlineKeyboardMarkup()
@@ -120,29 +123,29 @@ def refresh_button_menu(message, uid):
     
     markup.add(types.InlineKeyboardButton("💾 Continue & Save", callback_data="btn_save"))
     
-    try: bot.edit_message_text(txt, uid, message.message_id, reply_markup=markup, parse_mode='HTML')
-    except: bot.send_message(uid, txt, reply_markup=markup, parse_mode='HTML')
+    # Strictly edit the dashboard
+    try: bot.edit_message_text(txt, uid, data['dash_mid'], reply_markup=markup, parse_mode='HTML')
+    except: pass
 
 def set_btn_name(message):
     uid = message.from_user.id
     if uid in TEMP_SLOTS:
         TEMP_SLOTS[uid]['curr_name'] = message.text
-        # Cleanup
-        try: bot.delete_message(uid, message.message_id)
-        except: pass
-        refresh_button_menu(message, uid) # Note: this will send a new one if edit fails
+        # Cleanup user input and the prompt
+        safe_delete(message.chat.id, message.message_id)
+        safe_delete(message.chat.id, TEMP_SLOTS[uid]['prompt_mid'])
+        refresh_button_menu(None, uid)
 
 def set_btn_url(message):
     uid = message.from_user.id
-    url = message.text
     if uid in TEMP_SLOTS:
-        if not url.startswith("http"):
-            bot.send_message(uid, "❌ Invalid URL! Must start with http or https.")
+        if not message.text.startswith("http"):
+            bot.send_message(uid, "❌ Invalid URL! Must start with http.")
             return
-        TEMP_SLOTS[uid]['curr_url'] = url
-        try: bot.delete_message(uid, message.message_id)
-        except: pass
-        refresh_button_menu(message, uid)
+        TEMP_SLOTS[uid]['curr_url'] = message.text
+        safe_delete(message.chat.id, message.message_id)
+        safe_delete(message.chat.id, TEMP_SLOTS[uid]['prompt_mid'])
+        refresh_button_menu(None, uid)
 
 def finalize_slot(message, uid):
     data = TEMP_SLOTS[uid]
@@ -150,9 +153,10 @@ def finalize_slot(message, uid):
         "title": f"Manual: {data['kw'].title()}",
         "db_mid": int(data['db_mid']),
         "type": "slot",
-        "custom_buttons": data['buttons'] # List of dicts [{"name": "...", "url": "..."}]
+        "custom_buttons": data['buttons']
     }
     db.add_filter(data['kw'], db_data)
     
-    bot.edit_message_text(f"✅ <b>Slot '{data['kw']}' Saved Successfully!</b>\nTotal Buttons: {len(data['buttons'])}", uid, message.message_id)
+    # Edit dashboard to show final success
+    bot.edit_message_text(f"✅ <b>Slot '{data['kw']}' Saved Successfully!</b>\nTotal Buttons: {len(data['buttons'])}", uid, data['dash_mid'], parse_mode='HTML')
     del TEMP_SLOTS[uid]
