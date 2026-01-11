@@ -55,7 +55,7 @@ def handle_membership_security(message):
  # This Bot Created By: @UNRATED_CODER!
 
     # --- GROUP TRACKING ---
-elif chat.type in ["group", "supergroup"]:
+    elif chat.type in ["group", "supergroup"]:
     if new.status in ["administrator", "member"]:
         db.add_group(chat.id, chat.title)
     elif new.status in ["left", "kicked"]:
