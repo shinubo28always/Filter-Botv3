@@ -29,9 +29,9 @@ def request_command(message):
 # Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
 # This Bot Created By: @AniReal_Support!
         instruction = (
-            "⚠️ <b>Anime Request Rules:</b>\n\n"
-            "Request karne ke liye command ke saath anime ka naam likhein.\n"
-            "Usage: <code>/request Naruto Shippuden</code>"
+          "⚠️ <b>Anime Request Rules:</b>\n\n"
+          "To request an anime, use the command followed by the anime name.\n"
+          "Usage: <code>/request Naruto Shippuden</code>"
         )
         return bot.reply_to(message, instruction)
     
@@ -43,7 +43,7 @@ def initiate_request_flow(uid):
     markup = types.ForceReply(selective=True)
     msg = bot.send_message(
         uid, 
-        "<b>👋 Here type your anime request:</b>\n\nMain aapki request Admin tak pahuncha dunga.", 
+        "<b>👋 Here type your anime request:</b>", 
         reply_markup=markup
     )
     bot.register_next_step_handler(msg, process_request_text_from_flow)
