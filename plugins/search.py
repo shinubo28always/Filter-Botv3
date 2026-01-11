@@ -15,6 +15,7 @@ from thefuzz import process, fuzz
 ITEMS_PER_PAGE = 5   
 FUZZY_THRESHOLD = 80 
 
+# Background Deletion Engine
 def delete_msg_timer(chat_id, message_ids, delay):
     def delayed_delete():
         time.sleep(delay)
@@ -121,31 +122,21 @@ def handle_callbacks(call):
     clicker_id = call.from_user.id
     data = call.data.split("|")
 
-    # --- 🛑 SECURITY CHECK (Sabse Pehle) ---
     if data[0] in ["ind", "fuz"]:
         try:
-            # Dono cases mein index 3 par user ID hai
             original_uid = int(data[3])
             if clicker_id != original_uid and not db.is_admin(clicker_id):
-                # AGAR DUSRA BANDA HAI TOH POPUP ALERT BHEJEIN AUR RETURN KAREIN
-                return bot.answer_callback_query(
-                    call.id, 
-                    "⚠️ Oops! That’s not your result. Go to search yourself!", 
-                    show_alert=True
-                )
+                return bot.answer_callback_query(call.id, "⚠️ Oops! That’s not your result. Go to search yourself!", show_alert=True)
         except: pass
 
-    # Agar security check pass ho gaya, toh loading spinner hatao
     try: bot.answer_callback_query(call.id)
     except: pass
 
-    # 1. INDEX NAVIGATION
     if data[0] == "ind":
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
         send_index_page(call.message.chat.id, letter, page, original_mid, ouid, edit_mid=call.message.message_id)
         return
 
-    # 2. RESULT HANDLER
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
@@ -154,7 +145,7 @@ def handle_callbacks(call):
             except: pass
             send_final_result(call.message, filter_data, mid)
 
-# ---------------- UTILS ----------------
+# ---------------- SEND RESULT (TIMERS & SLOTS) ----------------
 
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
@@ -162,30 +153,32 @@ def send_final_result(message, data, r_mid):
     try:
         markup = types.InlineKeyboardMarkup()
         if is_slot:
-            custom_btns = data.get('custom_buttons', [])
-            for btn in custom_btns: markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
-            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup if custom_btns else None, reply_to_message_id=r_mid)
+            # Manual Slot: Copies buttons from DB message automatically
+            res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_to_message_id=r_mid)
         else:
+            # Anime Result: 5-min Permanent link logic
             invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
-            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
-            res_msg = bot.copy_message(message.chat.id, config.DB_CHANNEL_ID, int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+            markup.add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
+            res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+        
+        # Auto Delete Result + User Message
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
     except Exception as e:
-        bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
+        bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid, parse_mode="HTML")
 
 def send_fsub_message(message, missing_normals, request_fsubs):
     markup = types.InlineKeyboardMarkup()
     for f in missing_normals:
         try:
             invite = bot.create_chat_invite_link(int(f['_id']), expire_date=int(time.time())+120, creates_join_request=False)
-            markup.add(types.InlineKeyboardButton(f"✨ Join Channel ✨", url=invite.invite_link))
+            markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
         except: pass
     for r in request_fsubs:
         try:
             invite = bot.create_chat_invite_link(int(r['_id']), expire_date=int(time.time())+300, creates_join_request=True)
-            markup.add(types.InlineKeyboardButton(f"✨ Request to Join ✨", url=invite.invite_link))
+            markup.add(types.InlineKeyboardButton("✨ Request to Join ✨", url=invite.invite_link))
         except: pass
     markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\n<blockquote><b>To view search results, please join our official channels.</b></blockquote>", reply_markup=markup)
+    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\n<blockquote><b>To view search results, please join our official channels.</b></blockquote>", reply_markup=markup, parse_mode="HTML")
 
 ### Support Us @UNRATED_CODER ###
