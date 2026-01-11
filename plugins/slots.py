@@ -26,7 +26,7 @@ def add_slot_start(message):
     }
     
     markup = types.ForceReply(selective=True)
-    msg = bot.reply_to(message, f"📤 <b>Step 1: Content Setup</b>\nKeyword: <code>{kw}</code>\n\nAb wo <b>Message (Text/Media)</b> bhejein jo aap save karna chahte hain:", reply_markup=markup)
+    msg = bot.reply_to(message, f"📤 <b>Step 1: Content Setup</b>\nKeyword: <code>{kw}</code>\n\n<b>Now send the Message (Text/Media) you want to save</b>:", reply_markup=markup)
     bot.register_next_step_handler(msg, process_slot_content)
 
 def process_slot_content(message):
@@ -44,7 +44,7 @@ def process_slot_content(message):
             types.InlineKeyboardButton("⏩ No, Skip This", callback_data="slot_skip")
         )
         
-        bot.send_message(uid, "❓ <b>Step 2: Buttons Setup</b>\nKya aap is filter mein custom buttons lagana chahte hain?", reply_markup=markup)
+        bot.send_message(uid, "❓ <b>Step 2: Buttons Setup</b>\nDo you want to add custom buttons to this filter?", reply_markup=markup)
     except Exception as e:
         bot.send_message(uid, f"❌ <b>Error:</b> {e}")
 
@@ -78,7 +78,7 @@ def handle_slot_callbacks(call):
     elif call.data == "btn_add_more":
         data = TEMP_SLOTS[uid]
         if not data['curr_name'] or not data['curr_url']:
-            return bot.answer_callback_query(call.id, "❌ Pehle Name aur URL dono bharein!", show_alert=True)
+            return bot.answer_callback_query(call.id, "❌ Please enter both Name and URL first!", show_alert=True)
         
         data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
         data['curr_name'] = None
