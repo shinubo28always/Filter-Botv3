@@ -24,7 +24,7 @@ def add_fsub_start(message):
         )
         bot.reply_to(message, f"⚙️ <b>Select Mode for:</b>\n{chat.title}", reply_markup=markup)
     except Exception as e:
-        bot.reply_to(message, f"❌ <b>Error:</b> Bot admin nahi hai ya ID galat hai.\nDetails: {e}")
+        bot.reply_to(message, f"❌ <b>Error:</b>\nDetails: {e}")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_init|"))
 def save_new_fsub(call):
