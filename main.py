@@ -47,7 +47,7 @@ if __name__ == "__main__":
     
     print(f"🚀 Bot Started | Owner: {config.OWNER_ID}")
     try:
-        send_log("<b>Bot Started Successfully!</b>\nNew Session Active.")
+        send_log("<blockquote><b>Bᴏᴛ Sᴛᴀʀᴛᴇᴅ Bʏ: @UNRATED_CODER</b></blockquote>")
     except: pass
 
     # 3. POLLING WITH BROAD PERMISSIONS
