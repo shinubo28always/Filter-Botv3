@@ -1,5 +1,5 @@
-# Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
-# This Bot Created By: @AniReal_Support!
+# Please Support Us! @UNRATED_CODER on Telegram! 
+# This Bot Created By: @UNRATED_CODER!
 import os
 from dotenv import load_dotenv
 
@@ -34,29 +34,20 @@ HELP_ADMIN = "https://t.me/AniReal_Chat_Group_Asia"
 
 
 PM_START_MSG = (
-    "👋 <b>Welcome {first_name}</b>\n\n"
+    "👋 <b>Wᴇʟᴄᴏᴍᴇ {first_name}!</b>\n\n"
     "<blockquote><b>"
-    "I’m your Personal Anime Channel Finder Bot 💫\n\n"
-    "• Send any anime name to get verified Telegram channel links.\n"
-    "• If you type only one word, index search will show results instantly.\n"
-    "• If a link doesn’t work, report it in Support and we’ll fix it.\n"
-    "• If an anime is missing, request it using the /request command.\n\n"
-    "Enjoy safe and verified anime links only! 🚀\n"
-    "Type an anime name to start searching."
+    "Hᴇʏ ᴛʜᴇʀᴇ! I’ᴍ ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ Aɴɪᴍᴇ Cʜᴀɴɴᴇʟ Fɪʟᴛᴇʀ Bᴏᴛ 💫\n\n"
+    "• I ᴏɴʟʏ ᴘʀᴏᴠɪᴅᴇ ᴠᴇʀɪꜰɪᴇᴅ Aɴɪᴍᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋs.\n"
+    "• Iꜰ ᴀɴʏ ʟɪɴᴋ ᴅᴏᴇsɴ’ᴛ ᴡᴏʀᴋ, ᴊᴜsᴛ ʀᴇᴘᴏʀᴛ ɪɴ sᴜᴘᴘᴏʀᴛ.\n\n"
+    "✨ <i>Just type an Anime Name to search!</i>"
     "</b></blockquote>\n\n"
     "<b>Support chat - @Secret_Chat_Pro_Robot</b>"
 )
 GROUP_START_MSG = (
-    "👋 <b>Hello {group_name}</b>\n\n"
-    "<blockquote><b>"
-    "This bot supports <u>Index Finding</u>.\n"
-    "If you type only one word, search will be bypassed and index results will be shown.\n\n"
-    "You can search any anime by sending its name.\n"
-    "If an anime is not available, you can request it using the /request command.\n\n"
-    "Make sure I have Admin permission to work properly."
-    "</b></blockquote>"
+    "<b>👋 ʜᴇʏ ɪ'ᴍ ᴀʟɪᴠᴇ! 🫠.\n"
+    "Jᴜsᴛ ᴛʏᴘᴇ <a href='https://t.me/AniFlow_Animes'>Anime Name</a> ᴛᴏ sᴇᴀʀᴄʜ.</b>"
 )
 
-HELP_MSG = "<b>How It Works</b>\n\n<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
-ABOUT_MSG = "<b>About This Bot</b>\n\n<blockquote><b>This bot is fast, secure, and reliable, providing access only to official and verified Telegram channels. There is no risk of device hacking or any unauthorized activity.</b>\n\n<b>The system is optimized for speed and privacy, ensuring a smooth and safe experience for every user.</b>\n<b>For quick access, you can request an index by sending a single word (for example:</b> <i>A</i>) <b>and receive the related index instantly.</b></blockquote>\n\n<b>Developed By:</b> <i>@UNRATED_CODER</i>"
-# Join & Support Us! @DogeshBhai_Pure_Bot
+HELP_MSG = "<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
+ABOUT_MSG = "<blockquote><b>This bot is fast, secure, and reliable, providing access only to official and verified Telegram channels. There is no risk of device hacking or any unauthorized activity.</b>\n\n<b>The system is optimized for speed and privacy, ensuring a smooth and safe experience for every user.</b>\n<b>For quick access, you can request an index by sending a single word (for example:</b> <i>A</i>) <b>and receive the related index instantly.</b></blockquote>\n\n<b>Developed By:</b> <i>@UNRATED_CODER</i>"
+# Join & Support Us! @UNRATED_CODER
