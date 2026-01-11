@@ -35,10 +35,16 @@ HELP_ADMIN = "https://t.me/AniReal_Chat_Group_Asia"
 
 PM_START_MSG = (
     "👋 <b>Welcome {first_name}</b>\n\n"
-    "<blockquote><b>Send any anime name"
-    "I’ll give you verified Telegram channel links." 
-    "If any link doesn’t work, report it in Support."
-    "Type an anime name to start.</b></blockquote>"
+    "<blockquote><b>"
+    "I’m your Personal Anime Channel Finder Bot 💫\n\n"
+    "• Send any anime name to get verified Telegram channel links.\n"
+    "• If you type only one word, index search will show results instantly.\n"
+    "• If a link doesn’t work, report it in Support and we’ll fix it.\n"
+    "• If an anime is missing, request it using the /request command.\n\n"
+    "Enjoy safe and verified anime links only! 🚀\n"
+    "Type an anime name to start searching."
+    "</b></blockquote>\n\n"
+    "<b>Support chat - @Secret_Chat_Pro_Robot</b>"
 )
 GROUP_START_MSG = (
     "👋 <b>Hello {group_name}</b>\n\n"
