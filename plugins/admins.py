@@ -10,7 +10,7 @@ import html
 def add_admin_handler(message):
     # Only Owner can add
     if str(message.from_user.id) != str(config.OWNER_ID):
-        return bot.reply_to(message, "❌ <b>Only the Main Owner can use this!</b>")
+        return bot.reply_to(message, "❌ <b>Only Owner can use this!</b>")
     
     try:
         parts = message.text.split()
@@ -25,7 +25,7 @@ def add_admin_handler(message):
 
         # 2. Check if user is in Database
         if not db.present_user(target_id):
-            return bot.reply_to(message, "❌ <b>User Not Found!</b>\nBande ne abhi tak bot start nahi kiya hai ya wo database mein nahi hai.")
+            return bot.reply_to(message, "❌ <b>User Not Found!</b>\n⚠️ Possibly the user hasn’t started the bot yet or has blocked it.")
 
         # 3. Try to notify the new Admin
         owner_name = html.escape(message.from_user.first_name)
@@ -34,13 +34,13 @@ def add_admin_handler(message):
 
         try:
             notification_text = (
-                "🎉 <b>Congratulations!</b>\n\n"
-                f"Aapko {owner_mention} ne is bot ka <b>Admin</b> bana diya hai.\n"
-                "Ab aap filters aur channels manage kar sakte hain."
-            )
+             "🎉 <b>Congratulations!</b>\n\n"
+            f"{owner_mention} has made you an <b>Admin</b> of this bot.\n"
+             "You can now manage filters and channels."
+          )
             bot.send_message(target_id, notification_text)
         except Exception as e:
-            return bot.reply_to(message, f"❌ <b>Error:</b> Bot user ko message nahi bhej pa raha.\nShayad usne bot block kar diya hai.")
+            return bot.reply_to(message, f"❌ <b>Error:</b> {e}")
 
         # 4. Final Save to DB
         db.add_admin(target_id)
@@ -52,7 +52,7 @@ def add_admin_handler(message):
 @bot.message_handler(commands=['del_admin'])
 def del_admin_handler(message):
     if str(message.from_user.id) != str(config.OWNER_ID):
-        return bot.reply_to(message, "❌ <b>Only the Main Owner can remove admins!</b>")
+        return bot.reply_to(message, "❌ <b>Only Owner can remove admins!</b>")
     
     try:
         parts = message.text.split()
@@ -68,7 +68,7 @@ def del_admin_handler(message):
         if deleted:
             bot.reply_to(message, f"🗑️ <b>Removed!</b> User <code>{target_id}</code> is no longer an Admin.")
         else:
-            bot.reply_to(message, "❌ <b>Not Found!</b> Ye ID admin list mein nahi hai.")
+            bot.reply_to(message, "❌ <b>Not Found!</b> This ID is not in the admin list.")
     except Exception as e:
         bot.reply_to(message, f"❌ <b>Error:</b> {e}")
 
