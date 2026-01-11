@@ -43,9 +43,20 @@ PM_START_MSG = (
     "</b></blockquote>\n\n"
     "<b>Support chat - @Secret_Chat_Pro_Robot</b>"
 )
+
 GROUP_START_MSG = (
     "<b>👋 ʜᴇʏ ɪ'ᴍ ᴀʟɪᴠᴇ! 🫠.\n"
     "Jᴜsᴛ ᴛʏᴘᴇ <a href='https://t.me/AniFlow_Animes'>Anime Name</a> ᴛᴏ sᴇᴀʀᴄʜ.</b>"
+)
+
+GROUP_AUTH_MSG = (
+    "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ in {group_name}.</b>\n\n"
+    "<blockquote><b>"
+    "• Just type any Anime Name to search verified channels.\n"
+    "• If a link doesn’t work, report it in Support.\n"
+    "• If an anime is missing, request it using /request.\n\n"
+    "Make sure I have Admin permission for full functionality 🚀"
+    "</b></blockquote>"
 )
 
 HELP_MSG = "<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
