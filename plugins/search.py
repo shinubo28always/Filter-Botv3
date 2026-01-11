@@ -131,14 +131,14 @@ def handle_callbacks(call):
     if data[0] == "ind":
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
         if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ It's Not Your Request, Search yourself", show_alert=True)
+            return bot.answer_callback_query(call.id, "⚠️ Oops! That’s not your result. Go to search yourself!", show_alert=True)
         send_index_page(call.message.chat.id, letter, page, original_mid, ouid, edit_mid=call.message.message_id)
         return
 
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
         if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Sorry dear! These are not your search results. Please search yourself.", show_alert=True)
+            return bot.answer_callback_query(call.id, "⚠️ Oops! That’s not your result. Go to search yourself!", show_alert=True)
         
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
         if filter_data:
