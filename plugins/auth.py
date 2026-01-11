@@ -35,7 +35,7 @@ def handle_membership_security(message):
                     f"✅ <b>Channel Authorized!</b>\n\n"
                     f"Channel: <b>{safe_title}</b>\n"
                     f"ID: <code>{chat.id}</code>\n\n"
-                    f"Aap niche button se is channel ke anime filters add kar sakte hain."
+                    f"You can add anime filters for this channel using the button below."
                 )
                 
                 try:
