@@ -1,4 +1,4 @@
-### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
+### This bot is Created By UNRATED CODER --- Join @UNRATED_CODER ###
 ### ==========================★========================== ###
 ### ---------- Created By UNRATED CODER ™ TEAM ---------- ###
 ###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
@@ -10,99 +10,126 @@ import database as db
 from bot_instance import bot
 from telebot import types
 
-# Temporary storage to track the setup process
+# Temporary storage for slot setup
 TEMP_SLOTS = {}
 
 @bot.message_handler(commands=['add_slot'])
 def add_slot_start(message):
-    """Initiates the manual slot (filter) addition process"""
-    # Security check: Only Admins/Owner can add slots
-    if not db.is_admin(message.from_user.id):
-        return
-
-    # Extract keyword from command
+    if not db.is_admin(message.from_user.id): return
+    
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:
-        return bot.reply_to(
-            message, 
-            "⚠️ <b>Usage:</b> <code>/add_slot keyword</code>\n\n"
-            "Example: <code>/add_slot my_movie</code>"
-        )
+        return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/add_slot keyword</code>")
     
-    keyword = parts[1].lower().strip()
+    kw = parts[1].lower().strip()
     uid = message.from_user.id
     
-    # Initialize the temporary session
-    TEMP_SLOTS[uid] = {"kw": keyword}
+    TEMP_SLOTS[uid] = {
+        "kw": kw,
+        "buttons": [],
+        "curr_name": None,
+        "curr_url": None,
+        "db_mid": None
+    }
     
-    # Use ForceReply to guide the user
     markup = types.ForceReply(selective=True)
-    msg = bot.reply_to(
-        message, 
-        f"📤 <b>Slot Setup:</b> <code>{keyword}</code>\n\n"
-        "Now, send the <b>Message</b> (Text, Photo, Video, or File with Buttons) "
-        "that you want to save for this keyword:", 
-        reply_markup=markup
-    )
-    
-    # Register the next step to receive the content
+    msg = bot.reply_to(message, f"📤 <b>Slot Setup:</b> <code>{kw}</code>\n\nSend the <b>Message (Text/Media)</b> you want to save:", reply_markup=markup)
     bot.register_next_step_handler(msg, process_slot_content)
 
 def process_slot_content(message):
     uid = message.from_user.id
-    
-    # Check if the session still exists
-    if uid not in TEMP_SLOTS:
-        return bot.send_message(message.chat.id, "❌ <b>Session Expired!</b> Please start again.")
-
-    # If user sends another command, cancel the setup
-    if message.text and message.text.startswith("/"):
-        del TEMP_SLOTS[uid]
-        return bot.send_message(uid, "❌ <b>Setup Cancelled.</b>")
+    if uid not in TEMP_SLOTS: return
 
     try:
-        # Convert DB Channel ID to integer to prevent API errors
-        db_channel_id = int(config.DB_CHANNEL_ID)
+        # Forward to DB channel to preserve original content
+        forwarded = bot.forward_message(int(config.DB_CHANNEL_ID), message.chat.id, message.message_id)
+        TEMP_SLOTS[uid]['db_mid'] = forwarded.message_id
         
-        # 1. FORWARD the message to the DB Channel
-        # This is the most stable method to keep Buttons and Media intact
-        forwarded = bot.forward_message(
-            chat_id=db_channel_id, 
-            from_chat_id=message.chat.id, 
-            message_id=message.message_id
+        markup = types.InlineKeyboardMarkup()
+        markup.row(
+            types.InlineKeyboardButton("➕ Add Custom Buttons", callback_data="sl_add_btn"),
+            types.InlineKeyboardButton("⏩ No, Skip This", callback_data="sl_skip")
         )
-        
-        # 2. SAVE the Post ID to MongoDB
-        keyword = TEMP_SLOTS[uid]['kw']
-        data = {
-            "title": f"Slot: {keyword.title()}",
-            "db_mid": int(forwarded.message_id),
-            "type": "slot" # Distinguishes manual slots from auto anime filters
-        }
-        
-        db.add_filter(keyword, data)
-        
-        # 3. Final Success Message
-        bot.reply_to(
-            message, 
-            f"✅ <b>Manual Slot Added Successfully!</b>\n\n"
-            f"🏷 <b>Keyword:</b> <code>{keyword}</code>\n"
-            f"🆔 <b>Post ID:</b> <code>{forwarded.message_id}</code>\n\n"
-            "Now, whenever someone searches for this keyword, the bot will deliver this exact message."
-        )
-        
-        # Clear the session data
-        del TEMP_SLOTS[uid]
-        
+        bot.send_message(uid, "❓ <b>Step 2: Buttons</b>\nDo you want to add extra custom buttons to this slot?", reply_markup=markup)
     except Exception as e:
-        error_msg = str(e)
-        bot.send_message(
-            uid, 
-            f"❌ <b>Error!</b>\n<code>{error_msg}</code>\n\n"
-            f"Ensure the bot is an <b>Admin</b> in the DB Channel: <code>{config.DB_CHANNEL_ID}</code>"
-        )
-        if uid in TEMP_SLOTS:
-            del TEMP_SLOTS[uid]
+        bot.send_message(uid, f"❌ <b>Error:</b> <code>{str(e)}</code>")
+        del TEMP_SLOTS[uid]
 
-### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
-### --------> https://t.me/UNRATED_CODER <-------- ###
+@bot.callback_query_handler(func=lambda call: call.data.startswith(("sl_", "bt_")))
+def handle_slot_callbacks(call):
+    uid = call.from_user.id
+    if uid not in TEMP_SLOTS:
+        return bot.answer_callback_query(call.id, "Session Expired! Restart /add_slot", show_alert=True)
+
+    if call.data == "sl_skip":
+        finalize_slot(call.message, uid)
+    elif call.data == "sl_add_btn" or call.data == "bt_refresh":
+        refresh_button_menu(call.message, uid)
+    elif call.data == "bt_name":
+        msg = bot.send_message(uid, "✍️ <b>Send Button Name:</b>", reply_markup=types.ForceReply())
+        bot.register_next_step_handler(msg, set_btn_name)
+    elif call.data == "bt_url":
+        msg = bot.send_message(uid, "🌐 <b>Send Button URL:</b>", reply_markup=types.ForceReply())
+        bot.register_next_step_handler(msg, set_btn_url)
+    elif call.data == "bt_add_more":
+        data = TEMP_SLOTS[uid]
+        if not data['curr_name'] or not data['curr_url']:
+            return bot.answer_callback_query(call.id, "Set Name and URL first!", show_alert=True)
+        data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
+        data['curr_name'] = data['curr_url'] = None
+        refresh_button_menu(call.message, uid)
+    elif call.data == "bt_save":
+        data = TEMP_SLOTS[uid]
+        if data['curr_name'] and data['curr_url']:
+            data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
+        finalize_slot(call.message, uid)
+
+def refresh_button_menu(message, uid):
+    data = TEMP_SLOTS[uid]
+    btn_list = "\n".join([f"🔹 {b['name']}" for b in data['buttons']]) or "None"
+    txt = (
+        f"🛠 <b>Button Creator</b>\n\n"
+        f"📋 <b>Added:</b>\n{btn_list}\n\n"
+        f"✨ <b>Current:</b>\n"
+        f"🏷 Name: <code>{data['curr_name'] or 'Not Set'}</code>\n"
+        f"🔗 URL: {'Added ✅' if data['curr_url'] else 'Not Set'}"
+    )
+    markup = types.InlineKeyboardMarkup()
+    markup.row(types.InlineKeyboardButton("➕ Name", callback_data="bt_name"),
+               types.InlineKeyboardButton("➕ URL", callback_data="bt_url"))
+    if data['curr_name'] and data['curr_url']:
+        markup.add(types.InlineKeyboardButton("➕ Add More", callback_data="bt_add_more"))
+    markup.add(types.InlineKeyboardButton("💾 Finish & Save", callback_data="bt_save"))
+    try: bot.edit_message_text(txt, uid, message.message_id, reply_markup=markup, parse_mode='HTML')
+    except: bot.send_message(uid, txt, reply_markup=markup, parse_mode='HTML')
+
+def set_btn_name(message):
+    uid = message.from_user.id
+    if uid in TEMP_SLOTS:
+        TEMP_SLOTS[uid]['curr_name'] = message.text
+        try: bot.delete_message(uid, message.message_id)
+        except: pass
+        refresh_button_menu(message, uid)
+
+def set_btn_url(message):
+    uid = message.from_user.id
+    if uid in TEMP_SLOTS:
+        if not message.text.startswith("http"):
+            bot.send_message(uid, "❌ Invalid URL! Start with http.")
+            return
+        TEMP_SLOTS[uid]['curr_url'] = message.text
+        try: bot.delete_message(uid, message.message_id)
+        except: pass
+        refresh_button_menu(message, uid)
+
+def finalize_slot(message, uid):
+    data = TEMP_SLOTS[uid]
+    db_data = {
+        "title": f"Slot: {data['kw'].title()}",
+        "db_mid": int(data['db_mid']),
+        "type": "slot",
+        "custom_buttons": data['buttons']
+    }
+    db.add_filter(data['kw'], db_data)
+    bot.edit_message_text(f"✅ <b>Manual Slot '{data['kw']}' Saved!</b>", uid, message.message_id)
+    del TEMP_SLOTS[uid]
