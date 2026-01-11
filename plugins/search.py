@@ -131,7 +131,7 @@ def handle_callbacks(call):
                 # AGAR DUSRA BANDA HAI TOH YAHAN ALERT MILEGA
                 return bot.answer_callback_query(
                     call.id, 
-                    "⚠️ Oops! That’s not your result. Go to search yourself! @UNRATED_CODER", 
+                    "⚠️ Oops! That’s not your result. Go to search yourself!", 
                     show_alert=True
                 )
         except: pass
