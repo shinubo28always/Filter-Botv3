@@ -34,7 +34,7 @@ HELP_ADMIN = "https://t.me/AniReal_Chat_Group_Asia"
 
 
 PM_START_MSG = (
-    "👋 <b>Welcome {username}</b>\n\n"
+    "👋 <b>Welcome {first_name}</b>\n\n"
     "<blockquote><b>Send any anime name"
     "I’ll give you verified Telegram channel links." 
     "If any link doesn’t work, report it in Support."
