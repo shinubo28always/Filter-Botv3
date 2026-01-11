@@ -60,7 +60,7 @@ def search_handler(message):
     
     if not best_matches:
         if message.chat.type == "private":
-            bot.reply_to(message, f"❌ <b>No results found!</b>\nSearch yourself @UNRATED_CODER")
+            bot.reply_to(message, f"❌ <b>No results found!</b> Please try another anime name.")
         return
 
     if best_matches[0][1] >= 95:
@@ -131,14 +131,14 @@ def handle_callbacks(call):
     if data[0] == "ind":
         letter, page, ouid, original_mid = data[1], int(data[2]), int(data[3]), int(data[4])
         if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Search yourself @UNRATED_CODER", show_alert=True)
+            return bot.answer_callback_query(call.id, "⚠️ It's Not Your Request, Search yourself", show_alert=True)
         send_index_page(call.message.chat.id, letter, page, original_mid, ouid, edit_mid=call.message.message_id)
         return
 
     if data[0] == "fuz":
         key, mid, ouid = data[1], int(data[2]), int(data[3])
         if clicker_id != ouid and not db.is_admin(clicker_id):
-            return bot.answer_callback_query(call.id, "⚠️ Not your request @UNRATED_CODER", show_alert=True)
+            return bot.answer_callback_query(call.id, "⚠️ Sorry dear! These are not your search results. Please search yourself.", show_alert=True)
         
         filter_data = db.get_filter(key) or db.get_filter(process.extractOne(key, db.get_all_keywords())[0])
         if filter_data:
@@ -192,6 +192,6 @@ def send_fsub_message(message, missing_normals, request_fsubs):
             markup.add(types.InlineKeyboardButton(f"✨ Request to Join ✨", url=invite.invite_link))
         except: pass
     markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
-    bot.reply_to(message, "⚠️ <b>Access Restricted!</b>\nJoin our channels to view results.", reply_markup=markup)
+    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\n<blockquote><b>To view search results, please join our official channels.\nOnce joined, you can use the bot freely and search for any anime instantly.</b></blockquote>", reply_markup=markup)
 
 ### Support Us @UNRATED_CODER ###
