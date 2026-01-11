@@ -34,11 +34,11 @@ HELP_ADMIN = "https://t.me/AniReal_Chat_Group_Asia"
 
 
 PM_START_MSG = (
-    "🎬 <b>Wᴇʟᴄᴏᴍᴇ {first_name}!</b>\n\n"
-    "Hᴇʏ ᴛʜᴇʀᴇ! I’ᴍ ʏᴏᴜʀ ᴘᴇʀsᴏɴᴀʟ Aɴɪᴍᴇ Cʜᴀɴɴᴇʟ Fɪʟᴛᴇʀ Bᴏᴛ 💫\n"
-    "• I ᴏɴʟʏ ᴘʀᴏᴠɪᴅᴇ ᴠᴇʀɪꜰɪᴇᴅ Aɴɪᴍᴇ ᴄʜᴀɴɴᴇʟ ʟɪɴᴋs.\n"
-    "• Iꜰ ᴀɴʏ ʟɪɴᴋ ᴅᴏᴇsɴ’ᴛ ᴡᴏʀᴋ, ᴊᴜsᴛ ʀᴇᴘᴏʀᴛ ɪɴ sᴜᴘᴘᴏʀᴛ.\n\n"
-    "✨ <i>Just type Anime Name to search!</i>"
+    f"🎬 <b>Welcome {username}</b>\n\n"
+    f"<blockquote><b>Send any anime name"
+    f"I’ll give you verified Telegram channel links." 
+    f"If any link doesn’t work, report it in Support."
+    f"Type an anime name to start.</b></blockquote>"
 )
 GROUP_START_MSG = (
     "👋 <b>Hᴇʏ! I ᴀᴍ Aʟɪᴠᴇ ɪɴ {group_name}.</b>\n\n"
