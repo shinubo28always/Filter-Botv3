@@ -1,91 +1,186 @@
-### This bot is Created By UNRATED CODER --- Join @UNRATED_CODER ###
+### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
+### ==========================★========================== ###
+### ---------- Created By UNRATED CODER ™ TEAM ---------- ###
+###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
+### ==========================★========================== ###
+
 from bot_instance import bot
 from telebot import types
 import database as db
 import config
+import html
 
+# In-memory session tracking
 TEMP_SLOTS = {}
 
 @bot.message_handler(commands=['add_slot'])
 def add_slot_start(message):
     if not db.is_admin(message.from_user.id): return
+    
     parts = message.text.split(maxsplit=1)
-    if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/add_slot keyword</code>")
+    if len(parts) < 2:
+        return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/add_slot keyword</code>")
+    
     kw = parts[1].lower().strip()
     uid = message.from_user.id
-    TEMP_SLOTS[uid] = {"kw": kw, "buttons": [], "show_in_index": False, "index_name": kw.title()}
+    
+    # Initialize Session Data
+    TEMP_SLOTS[uid] = {
+        "kw": kw,
+        "buttons": [],
+        "curr_name": None,
+        "curr_url": None,
+        "db_mid": None,
+        "show_in_index": False,
+        "index_name": kw.title(),
+        "menu_msg_id": None # To keep editing the same menu
+    }
+    
     markup = types.ForceReply(selective=True)
-    msg = bot.reply_to(message, f"📤 <b>Slot:</b> <code>{kw}</code>\n\nSend the message (Text/Media/Buttons) you want to save:", reply_markup=markup)
+    msg = bot.reply_to(message, f"📤 <b>Slot:</b> <code>{kw}</code>\n\nSend the <b>Message (Text/Media/Buttons)</b> you want to save:", reply_markup=markup)
     bot.register_next_step_handler(msg, process_slot_content)
 
 def process_slot_content(message):
     uid = message.from_user.id
+    if uid not in TEMP_SLOTS: return
+
     try:
-        forwarded = bot.forward_message(int(config.DB_CHANNEL_ID), message.chat.id, message.message_id)
+        # 1. Forward content to DB Channel
+        db_id = int(config.DB_CHANNEL_ID)
+        forwarded = bot.forward_message(db_id, message.chat.id, message.message_id)
         TEMP_SLOTS[uid]['db_mid'] = forwarded.message_id
-        markup = types.InlineKeyboardMarkup()
-        markup.row(types.InlineKeyboardButton("➕ Add Buttons", callback_data="sl_btn"),
-                   types.InlineKeyboardButton("⏩ Skip", callback_data="sl_skip_btn"))
-        bot.send_message(uid, "❓ <b>Step 2: Buttons</b>\nDo you want custom buttons?", reply_markup=markup)
-    except Exception as e: bot.send_message(uid, f"❌ Error: {e}")
+        
+        # 2. Show Button Setup Menu
+        show_button_menu(uid, message.chat.id)
+    except Exception as e:
+        bot.send_message(uid, f"❌ <b>Error:</b> {str(e)}")
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(("sl_", "bt_")))
-def handle_slot_flow(call):
+def show_button_menu(uid, chat_id, edit=False):
+    data = TEMP_SLOTS[uid]
+    btn_list = "\n".join([f"🔹 {b['name']}" for b in data['buttons']]) or "None"
+    
+    c_name = data['curr_name'] if data['curr_name'] else "Not Set"
+    c_url = "URL Added..✅" if data['curr_url'] else "Not Set"
+    
+    txt = (
+        f"🛠 <b>Custom Button Creator</b>\n\n"
+        f"📋 <b>Added Buttons:</b>\n{btn_list}\n\n"
+        f"✨ <b>Current Setup:</b>\n"
+        f"🏷 Name: <code>{c_name}</code>\n"
+        f"🔗 URL: {c_url}\n\n"
+        "Fill details using buttons below:"
+    )
+    
+    markup = types.InlineKeyboardMarkup()
+    markup.row(types.InlineKeyboardButton("➕ Set Name", callback_data="bt_name"),
+               types.InlineKeyboardButton("➕ Set URL", callback_data="bt_url"))
+    
+    if data['curr_name'] and data['curr_url']:
+        markup.add(types.InlineKeyboardButton("✅ Add More Buttons", callback_data="bt_add_list"))
+    
+    markup.add(types.InlineKeyboardButton("💾 Next Step (Indexing)", callback_data="bt_next_step"))
+
+    if edit and data['menu_msg_id']:
+        try: bot.edit_message_text(txt, chat_id, data['menu_msg_id'], reply_markup=markup, parse_mode='HTML')
+        except: pass
+    else:
+        sent = bot.send_message(chat_id, txt, reply_markup=markup, parse_mode='HTML')
+        TEMP_SLOTS[uid]['menu_msg_id'] = sent.message_id
+
+# --- CALLBACK HANDLERS ---
+@bot.callback_query_handler(func=lambda call: call.data.startswith(("sl_", "bt_", "pick_")))
+def handle_slot_callbacks(call):
     uid = call.from_user.id
-    if uid not in TEMP_SLOTS: return bot.answer_callback_query(call.id, "Session Expired!", show_alert=True)
+    if uid not in TEMP_SLOTS:
+        return bot.answer_callback_query(call.id, "❌ Session Expired! Start again.", show_alert=True)
 
-    if call.data == "sl_btn":
-        refresh_btn_menu(call.message, uid)
-    elif call.data == "bt_name":
-        msg = bot.send_message(uid, "✍️ Enter Button Name:", reply_markup=types.ForceReply())
-        bot.register_next_step_handler(msg, lambda m: set_name(m, uid))
+    bot.answer_callback_query(call.id)
+
+    if call.data == "bt_name":
+        msg = bot.send_message(uid, "✍️ <b>Enter Button Name:</b>", reply_markup=types.ForceReply())
+        bot.register_next_step_handler(msg, save_btn_name)
+
     elif call.data == "bt_url":
-        msg = bot.send_message(uid, "🌐 Enter URL:", reply_markup=types.ForceReply())
-        bot.register_next_step_handler(msg, lambda m: set_url(m, uid))
-    elif call.data == "bt_add":
+        msg = bot.send_message(uid, "🌐 <b>Enter Button URL:</b>", reply_markup=types.ForceReply())
+        bot.register_next_step_handler(msg, save_btn_url)
+
+    elif call.data == "bt_add_list":
         data = TEMP_SLOTS[uid]
-        data['buttons'].append({"name": data['curr_n'], "url": data['curr_u']})
-        data['curr_n'] = data['curr_u'] = None
-        refresh_btn_menu(call.message, uid)
-    elif call.data in ["sl_skip_btn", "bt_done"]:
-        if call.data == "bt_done" and TEMP_SLOTS[uid].get('curr_n'):
-            TEMP_SLOTS[uid]['buttons'].append({"name": TEMP_SLOTS[uid]['curr_n'], "url": TEMP_SLOTS[uid]['curr_u']})
-        ask_index(call.message, uid)
-    elif call.data == "sl_ind_y":
-        msg = bot.send_message(uid, "✍️ Enter Name for Index:", reply_markup=types.ForceReply())
-        bot.register_next_step_handler(msg, lambda m: set_idx_name(m, uid))
-    elif call.data == "sl_ind_n":
-        finalize(call.message, uid)
+        data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
+        data['curr_name'] = data['curr_url'] = None
+        show_button_menu(uid, call.message.chat.id, edit=True)
 
-def refresh_btn_menu(message, uid):
+    elif call.data == "bt_next_step":
+        data = TEMP_SLOTS[uid]
+        # Auto-save current if not empty
+        if data['curr_name'] and data['curr_url']:
+            data['buttons'].append({"name": data['curr_name'], "url": data['curr_url']})
+        
+        # Ask for Indexing
+        markup = types.InlineKeyboardMarkup()
+        markup.row(types.InlineKeyboardButton("✅ Yes, Show in Index", callback_data="sl_ind_yes"),
+                   types.InlineKeyboardButton("❌ No, Hide it", callback_data="sl_ind_no"))
+        bot.edit_message_text("❓ <b>Step 3: Indexing</b>\nDo you want to show this slot in the A-Z Index?", uid, data['menu_msg_id'], reply_markup=markup)
+
+    elif call.data == "sl_ind_yes":
+        msg = bot.send_message(uid, "✍️ <b>Enter Display Name for Index:</b>", reply_markup=types.ForceReply())
+        bot.register_next_step_handler(msg, save_index_name)
+
+    elif call.data == "sl_ind_no":
+        TEMP_SLOTS[uid]['show_in_index'] = False
+        finalize_slot_save(uid, call.message.chat.id)
+
+# --- NEXT STEP HANDLERS ---
+def save_btn_name(message):
+    uid = message.from_user.id
+    if uid in TEMP_SLOTS:
+        TEMP_SLOTS[uid]['curr_name'] = message.text
+        try: bot.delete_message(uid, message.message_id) # Cleanup user msg
+        except: pass
+        show_button_menu(uid, uid, edit=True)
+
+def save_btn_url(message):
+    uid = message.from_user.id
+    url = message.text.strip()
+    if uid in TEMP_SLOTS:
+        if not url.startswith("http"):
+            bot.send_message(uid, "❌ <b>Invalid URL!</b> Link must start with http/https. Try again:")
+            return bot.register_next_step_handler(message, save_btn_url)
+        
+        TEMP_SLOTS[uid]['curr_url'] = url
+        try: bot.delete_message(uid, message.message_id) # Cleanup user msg
+        except: pass
+        show_button_menu(uid, uid, edit=True)
+
+def save_index_name(message):
+    uid = message.from_user.id
+    if uid in TEMP_SLOTS:
+        TEMP_SLOTS[uid]['show_in_index'] = True
+        TEMP_SLOTS[uid]['index_name'] = message.text.strip()
+        try: bot.delete_message(uid, message.message_id)
+        except: pass
+        finalize_slot_save(uid, uid, is_new_msg=True)
+
+def finalize_slot_save(uid, chat_id, is_new_msg=False):
     data = TEMP_SLOTS[uid]
-    btns = "\n".join([f"🔹 {b['name']}" for b in data['buttons']]) or "None"
-    txt = f"🛠 <b>Buttons</b>\n\nAdded:\n{btns}\n\nCurrent: {data.get('curr_n','None')} | {data.get('curr_u','None')}"
-    markup = types.InlineKeyboardMarkup()
-    markup.row(types.InlineKeyboardButton("➕ Name", callback_data="bt_name"), types.InlineKeyboardButton("➕ URL", callback_data="bt_url"))
-    if data.get('curr_n') and data.get('curr_u'): markup.add(types.InlineKeyboardButton("➕ Add More", callback_data="bt_add"))
-    markup.add(types.InlineKeyboardButton("💾 Next Step", callback_data="bt_done"))
-    bot.edit_message_text(txt, uid, message.message_id, reply_markup=markup)
-
-def set_name(m, uid): TEMP_SLOTS[uid]['curr_n'] = m.text; refresh_btn_menu(m, uid)
-def set_url(m, uid): 
-    if m.text.startswith("http"): TEMP_SLOTS[uid]['curr_u'] = m.text
-    refresh_btn_menu(m, uid)
-
-def ask_index(message, uid):
-    markup = types.InlineKeyboardMarkup()
-    markup.row(types.InlineKeyboardButton("✅ Yes", callback_data="sl_ind_y"), types.InlineKeyboardButton("❌ No", callback_data="sl_ind_n"))
-    bot.edit_message_text("❓ <b>Indexing</b>\nShow in A-Z Index?", uid, message.message_id, reply_markup=markup)
-
-def set_idx_name(m, uid):
-    TEMP_SLOTS[uid]['show_in_index'] = True
-    TEMP_SLOTS[uid]['index_name'] = m.text.strip()
-    finalize(m, uid, is_m=True)
-
-def finalize(message, uid, is_m=False):
-    data = TEMP_SLOTS[uid]
-    db.add_filter(data['kw'], {"title": data['index_name'], "db_mid": int(data['db_mid']), "type": "slot", "custom_buttons": data['buttons'], "show_in_index": data['show_in_index']})
-    txt = f"✅ <b>Slot '{data['kw']}' Saved!</b>"
-    if is_m: bot.send_message(uid, txt)
-    else: bot.edit_message_text(txt, uid, message.message_id)
+    
+    db_data = {
+        "title": data.get('index_name', data['kw'].title()),
+        "db_mid": int(data['db_mid']),
+        "type": "slot",
+        "custom_buttons": data['buttons'],
+        "show_in_index": data['show_in_index']
+    }
+    
+    db.add_filter(data['kw'], db_data)
+    
+    res_text = f"✅ <b>Slot '{data['kw']}' Saved Successfully!</b>"
+    
+    if is_new_msg:
+        bot.send_message(uid, res_text, parse_mode='HTML')
+    else:
+        bot.edit_message_text(res_text, uid, data['menu_msg_id'], parse_mode='HTML')
+    
     del TEMP_SLOTS[uid]
+
+### Bot by UNRATED CODER --- Support @UNRATED_CODER ###
