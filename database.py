@@ -1,4 +1,4 @@
-### This bot is Created By UNRATED CODER --- Join @UNRATED_CODER ###
+### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
 from pymongo import MongoClient
 import config, sys
 
@@ -6,6 +6,7 @@ DB_NAME = "AniReal_Filter_Bot"
 try:
     client = MongoClient(config.MONGO_URI, serverSelectionTimeoutMS=10000)
     db = client[DB_NAME]; db.command('ping')
+    print(f"✅ MongoDB Connected: {DB_NAME}")
 except Exception as e:
     print(f"❌ MongoDB Error: {e}"); sys.exit(1)
 
@@ -28,8 +29,18 @@ def get_filter(keyword): return filters.find_one({"keyword": keyword.lower().str
 def get_filter_by_mid(mid): return filters.find_one({"db_mid": int(mid)})
 def get_all_keywords(): return [f['keyword'] for f in filters.find({}, {"keyword": 1})]
 def get_all_filters_list(): return list(filters.find({}, {"keyword": 1, "title": 1}))
-def get_index_results(letter): return list(filters.find({"keyword": {"$regex": f"^{letter.lower()}"}, "$or": [{"show_in_index": True}, {"type": "anime"}]}))
 
+# --- FIXED INDEX QUERY ---
+def get_index_results(letter): 
+    # Logic: Match keyword starting with letter AND (Not hidden by user)
+    query = {
+        "keyword": {"$regex": f"^{letter.lower()}"},
+        "show_in_index": {"$ne": False} # Sab dikhao, jab tak explicitly False na ho
+    }
+    return list(filters.find(query))
+
+def delete_filter(keyword): return filters.delete_one({"keyword": keyword.lower().strip()}).deleted_count
+def delete_all_filters(): return filters.delete_many({}).deleted_count
 def add_fsub_chnl(chat_id, title, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": mode}}, upsert=True)
 def get_all_fsub(): return list(fsub_col.find())
 def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_count
