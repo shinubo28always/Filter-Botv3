@@ -14,15 +14,15 @@ import config
 from utils import send_log
 
 # Import Plugins in specific order
-import plugins.fsub
 import plugins.admins
-import plugins.search
-import plugins.commands
-import plugins.broadcast
 import plugins.auth
+import plugins.broadcast
+import plugins.commands
+import plugins.fsub
+import plugins.request
+import plugins.search
 import plugins.setup
 import plugins.slots
-import plugins.request
 
 app = Flask(__name__)
 @app.route('/')
