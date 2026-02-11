@@ -14,9 +14,9 @@ import config
 from utils import send_log
 
 # Import Plugins in specific order
-import plugins.commands
-import plugins.admins
 import plugins.fsub
+import plugins.admins
+import plugins.commands
 import plugins.request
 import plugins.broadcast
 import plugins.auth
