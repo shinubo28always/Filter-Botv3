@@ -17,12 +17,12 @@ from utils import send_log
 import plugins.fsub
 import plugins.admins
 import plugins.search
-import plugins.request
+import plugins.commands
 import plugins.broadcast
 import plugins.auth
 import plugins.setup
 import plugins.slots
-import plugins.commands
+import plugins.request
 
 app = Flask(__name__)
 @app.route('/')
