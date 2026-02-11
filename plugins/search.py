@@ -111,28 +111,26 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
     try: bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
     except: pass
 
-@bot.callback_query_handler(func=lambda call: True)
+@bot.callback_query_handler(func=lambda call: call.data.startswith(('ind', 'res')))
 def handle_callbacks(call):
     data = call.data.split("|")
     
-    # Validation Logic
+    # 1. Validation Logic
     if data[0] == "ind":
-        # Index button ke liye UID index 3 par hai
         searcher_id = int(data[3]) 
     elif data[0] == "res":
-        # Result button ke liye UID index 2 par hai
         searcher_id = int(data[2])
     else:
-        searcher_id = None
+        return # Agar koi aur button ho toh ignore karein
 
-    # Agar user valid nahi hai aur admin bhi nahi hai
+    # 2. User Check
     if searcher_id and call.from_user.id != searcher_id and not db.is_admin(call.from_user.id):
         return bot.answer_callback_query(call.id, "⚠️ Not your request!", show_alert=True)
 
     bot.answer_callback_query(call.id)
 
+    # 3. Index Page Handling
     if data[0] == "ind":
-        # Data order: ind | letter | page | uid | original_mid
         send_index_page(
             call.message.chat.id, 
             data[1],             # letter
@@ -141,13 +139,15 @@ def handle_callbacks(call):
             int(data[3]),        # uid
             edit_mid=call.message.message_id
         )
+    
+    # 4. Result Handling
     elif data[0] == "res":
-        # Data order: res | db_mid | uid | original_mid
         filter_data = db.get_filter_by_mid(int(data[1]))
         if filter_data:
             try: bot.delete_message(call.message.chat.id, call.message.message_id)
             except: pass
             send_final_result(call.message, filter_data, int(data[3]))
+
 
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
