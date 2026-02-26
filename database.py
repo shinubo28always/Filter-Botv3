@@ -44,3 +44,6 @@ def delete_all_filters(): return filters.delete_many({}).deleted_count
 def add_fsub_chnl(chat_id, title, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": mode}}, upsert=True)
 def get_all_fsub(): return list(fsub_col.find())
 def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_count
+def present_user(uid):
+    return users.find_one({"_id": str(uid)}) is not None
+    def present_group(chat_id): return groups.find_one({"_id": str(chat_id)}) is not None
