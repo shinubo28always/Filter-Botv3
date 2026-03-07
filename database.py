@@ -10,7 +10,7 @@ try:
 except Exception as e:
     print(f"❌ MongoDB Error: {e}"); sys.exit(1)
 
-users, groups, filters, admins, fsub_col, req_col = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests']
+users, groups, filters, admins, fsub_col, req_col, settings = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings']
 
 def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 def get_all_users(): return [u['_id'] for u in users.find()]
@@ -59,3 +59,12 @@ def save_request(uid, first_name, query):
         "query": query,
         "time": time.time()
     })
+
+def get_pending_requests(): return list(req_col.find().sort("time", -1))
+def delete_request(uid, query): return req_col.delete_one({"uid": str(uid), "query": query}).deleted_count
+def delete_all_requests(): return req_col.delete_many({}).deleted_count
+
+def set_maintenance(status): settings.update_one({"_id": "maintenance"}, {"$set": {"status": bool(status)}}, upsert=True)
+def get_maintenance():
+    data = settings.find_one({"_id": "maintenance"})
+    return data['status'] if data else False

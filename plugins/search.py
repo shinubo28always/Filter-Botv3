@@ -29,6 +29,10 @@ def search_handler(message):
     if message.text.startswith("/"): return
     uid = message.from_user.id
 
+    # 0. MAINTENANCE CHECK
+    if db.get_maintenance() and not db.is_admin(uid):
+        return bot.reply_to(message, "🛠 <b>Bot is under maintenance. Please try again later!</b>")
+
     # 0. RATE LIMIT CHECK
     now = time.time()
     if uid in RATE_LIMITS and (now - RATE_LIMITS[uid]) < COOLDOWN:

@@ -1,10 +1,10 @@
 # Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
 # This Bot Created By: @AniReal_Support!
 from bot_instance import bot
-import config
+import config, time
 import database as db
 from telebot import types
-import html
+import html, json, io
 
 @bot.message_handler(commands=['add_admin'])
 def add_admin_handler(message):
@@ -71,6 +71,43 @@ def del_admin_handler(message):
             bot.reply_to(message, "❌ <b>Not Found!</b> This ID is not in the admin list.")
     except Exception as e:
         bot.reply_to(message, f"❌ <b>Error:</b> {e}")
+
+@bot.message_handler(commands=['maintenance'])
+def toggle_maintenance(message):
+    if not db.is_admin(message.from_user.id): return
+
+    curr = db.get_maintenance()
+    new_status = not curr
+    db.set_maintenance(new_status)
+
+    txt = "🛠 <b>Maintenance Mode:</b> " + ("<code>ENABLED</code>" if new_status else "<code>DISABLED</code>")
+    bot.reply_to(message, txt, parse_mode="HTML")
+
+@bot.message_handler(commands=['backup'])
+def backup_database(message):
+    if not db.is_admin(message.from_user.id): return
+
+    msg = bot.reply_to(message, "📤 <b>Generating Filter Backup...</b>")
+
+    try:
+        filters_data = db.get_all_filters_list()
+        # Full data nikalein details ke saath
+        full_filters = []
+        for f in filters_data:
+            details = db.get_filter(f['keyword'])
+            if details:
+                # MongoDB object IDs are not JSON serializable easily
+                if '_id' in details: del details['_id']
+                full_filters.append(details)
+
+        json_data = json.dumps(full_filters, indent=4)
+        bio = io.BytesIO(json_data.encode())
+        bio.name = f"filters_backup_{int(time.time())}.json"
+
+        bot.send_document(message.chat.id, bio, caption=f"✅ <b>Backup Successful!</b>\nTotal Filters: <code>{len(full_filters)}</code>", parse_mode="HTML")
+        bot.delete_message(message.chat.id, msg.message_id)
+    except Exception as e:
+        bot.edit_message_text(f"❌ <b>Backup Failed:</b>\n<code>{e}</code>", message.chat.id, msg.message_id)
 
 @bot.message_handler(commands=['admins'])
 def list_admins_handler(message):
