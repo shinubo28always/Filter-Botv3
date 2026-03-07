@@ -4,7 +4,7 @@
 ###  Join on Telegram Channel https://t.me/UNRATED_CODER  ###
 ### ==========================★========================== ###
 
-import time, threading, config, database as db
+import time, threading, config, database as db, re
 from bot_instance import bot
 from telebot import types, apihelper
 from thefuzz import process, fuzz
@@ -78,7 +78,7 @@ def search_handler(message):
         # but the wait_msg/index_page will be deleted by delete_msg_timer in send_index_page
         return
 
-    # 3. SUBSTRING KEYWORD MATCH (High Priority)
+    # 3. WORD-BOUNDARY KEYWORD MATCH (High Priority)
     all_kws = db.get_all_keywords()
     # Sort by length descending to match longest keyword first (e.g. "naruto shippuden" over "naruto")
     sorted_kws = sorted(all_kws, key=len, reverse=True)
@@ -86,7 +86,10 @@ def search_handler(message):
     found_kw = None
     for kw in sorted_kws:
         if len(kw) < 2: continue # Ignore very short single letters
-        if kw in query:
+
+        # Use regex to match only as a distinct word/phrase (prevents matching "naruto" inside "abcnarutoxyz")
+        pattern = r'\b' + re.escape(kw) + r'\b'
+        if re.search(pattern, query):
             found_kw = kw
             break
 

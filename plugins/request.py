@@ -161,8 +161,6 @@ def handle_request_management_callbacks(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("adm_rep|"))
 def admin_reply_callback(call):
-    if not db.is_admin(call.from_user.id):
-        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     data = call.data.split("|")
     target_uid = data[1]
     user_msg_id = data[2]

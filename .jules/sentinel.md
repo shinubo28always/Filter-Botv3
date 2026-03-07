@@ -1,4 +1,0 @@
-## 2025-05-15 - Missing Authorization in Callback Query Handlers
-**Vulnerability:** Several administrative callback query handlers (in `setup.py`, `fsub.py`, and `request.py`) were accessible to any user. While the initial commands to trigger these menus were protected, the callback data itself could be forged or intercepted, allowing unauthorized users to perform administrative actions like deleting filters or managing subscription channels.
-**Learning:** Protecting the entry-point command is not enough in Telegram bots using inline keyboards. Each step of a multi-step process (especially those triggered by `callback_query_handler`) must independently verify the user's authorization.
-**Prevention:** Always implement `db.is_admin(call.from_user.id)` checks at the beginning of any callback handler that performs sensitive operations or state changes.
