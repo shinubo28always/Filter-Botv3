@@ -207,15 +207,36 @@ def handle_del_all_callback(call):
     count = db.delete_all_filters()
     bot.edit_message_text(f"🗑️ <b>Total {count} filters deleted!</b>", call.message.chat.id, call.message.message_id, parse_mode='HTML')
 
+
 @bot.message_handler(commands=['id'])
 def send_id_info(message):
-    target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
-    uid = target_user.id
-    mention = f'<a href="tg://user?id={uid}">{html.escape(target_user.first_name)}</a>'
-    text = f"{mention}'s ID: <code>{uid}</code>"
-    if message.chat.type in ['group', 'supergroup']:
-        text += f"\nGroup ID: <code>{message.chat.id}</code>"
-    bot.reply_to(message, text, parse_mode="HTML")
+    text = ""
+    
+    # 1. Replying to a message logic
+    if message.reply_to_message:
+        # Agar reply kisi channel post par hai (Linked Group mein)
+        if message.reply_to_message.sender_chat:
+            target_chat = message.reply_to_message.sender_chat
+            title = html.escape(target_chat.title)
+            text = f"<b>Channel/Chat ID:</b> <code>{target_chat.id}</code>\n<b>Name:</b> {title}"
+        
+        # Agar reply kisi normal user par hai
+        else:
+            target_user = message.reply_to_message.from_user
+            mention = f'<a href="tg://user?id={target_user.id}">{html.escape(target_user.first_name)}</a>'
+            text = f"{mention}'s <b>User ID:</b> <code>{target_user.id}</code>"
+    
+    # 2. No reply (Command sender ki info)
+    else:
+        target_user = message.from_user
+        mention = f'<a href="tg://user?id={target_user.id}">{html.escape(target_user.first_name)}</a>'
+        text = f"{mention}'s <b>User ID:</b> <code>{target_user.id}</code>"
 
+    # 3. Hamesha Group ID add karein (agar group mein hai)
+    if message.chat.type in ['group', 'supergroup']:
+        text += f"\n\n<b>Group ID:</b> <code>{message.chat.id}</code>"
+    
+    bot.reply_to(message, text, parse_mode="HTML")
+    
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
 ### --------> https://t.me/UNRATED_CODER <-------- ###
