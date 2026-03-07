@@ -169,20 +169,62 @@ def stats_cmd(message):
 
 @bot.message_handler(commands=['topsearch'])
 def topsearch_cmd(message):
-    if not db.is_admin(message.from_user.id):
-        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
+    uid = message.from_user.id
+    is_admin = db.is_admin(uid)
 
-    # Show Top 20 for more detail in dedicated command
-    top = db.get_top_searches(20)
+    # Fetch Top 10
+    top = db.get_top_searches(10)
     if not top:
         return bot.reply_to(message, "🔥 <b>No searches tracked yet.</b>", parse_mode='HTML')
 
-    top_txt = "\n".join([f"• <code>{t['keyword']}</code>: {t['count']}" for t in top])
-    res = f"🔥 <b>Top 20 Trending Searches:</b>\n\n{top_txt}"
+    top_txt = "\n".join([f"{i+1}. <code>{t['keyword']}</code>: {t['count']}" for i, t in enumerate(top)])
+    res = f"🔥 <b>Top 10 Trending Searches:</b>\n\n{top_txt}"
 
     markup = types.InlineKeyboardMarkup()
+    if is_admin:
+        markup.row(
+            types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh"),
+            types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset")
+        )
     markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
     bot.reply_to(message, res, reply_markup=markup, parse_mode='HTML')
+
+@bot.callback_query_handler(func=lambda call: call.data in ["top_refresh", "top_reset"])
+def topsearch_callback(call):
+    uid = call.from_user.id
+    if not db.is_admin(uid):
+        return bot.answer_callback_query(call.id, "⚠️ Admin only!", show_alert=True)
+
+    if call.data == "top_reset":
+        db.clear_top_searches()
+        bot.answer_callback_query(call.id, "✅ Top searches cleared!", show_alert=True)
+        try: bot.delete_message(call.message.chat.id, call.message.message_id)
+        except: pass
+        return
+
+    # Refresh Logic
+    top = db.get_top_searches(10)
+    if not top:
+        bot.answer_callback_query(call.id, "📂 No data left.")
+        try: bot.delete_message(call.message.chat.id, call.message.message_id)
+        except: pass
+        return
+
+    top_txt = "\n".join([f"{i+1}. <code>{t['keyword']}</code>: {t['count']}" for i, t in enumerate(top)])
+    res = f"🔥 <b>Top 10 Trending Searches:</b>\n\n{top_txt}"
+
+    markup = types.InlineKeyboardMarkup()
+    markup.row(
+        types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh"),
+        types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset")
+    )
+    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+
+    try:
+        bot.edit_message_text(res, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='HTML')
+        bot.answer_callback_query(call.id, "✅ Refreshed!")
+    except:
+        bot.answer_callback_query(call.id, "Already Up-to-Date")
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):

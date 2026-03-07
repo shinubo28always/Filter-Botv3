@@ -78,37 +78,39 @@ def search_handler(message):
         # but the wait_msg/index_page will be deleted by delete_msg_timer in send_index_page
         return
 
-    # 3. EXACT MATCH (Highest Priority)
-    exact_data = db.get_filter(query)
-    if exact_data:
-        db.track_search(query) # Valid search found
-        return send_final_result(message, exact_data, message.message_id)
-
-    # 4. KEYWORD SCANNING (Slots & Tags)
+    # 3. SUBSTRING KEYWORD MATCH (High Priority)
     all_kws = db.get_all_keywords()
-    query_parts = query.split()
-    for word in query_parts:
-        if len(word) < 3: continue # Ignore very short words for scanning
-        data = db.get_filter(word)
-        if data and data.get('type') == 'slot':
-            db.track_search(word)
+    # Sort by length descending to match longest keyword first (e.g. "naruto shippuden" over "naruto")
+    sorted_kws = sorted(all_kws, key=len, reverse=True)
+
+    found_kw = None
+    for kw in sorted_kws:
+        if len(kw) < 2: continue # Ignore very short single letters
+        if kw in query:
+            found_kw = kw
+            break
+
+    if found_kw:
+        data = db.get_filter(found_kw)
+        if data:
+            db.track_search(found_kw)
             return send_final_result(message, data, message.message_id)
 
-    # 5. FUZZY SEARCH
+    # 4. FUZZY SEARCH
     matches = process.extract(query, all_kws, limit=10, scorer=fuzz.token_sort_ratio)
     best_matches = [m for m in matches if m[1] >= FUZZY_THRESHOLD]
 
     if not best_matches:
         if is_private:
-            db.track_search(query) # Track even failed searches in PM to see what users want
             no_res = bot.reply_to(message, "❌ <b>No results found!</b>")
             delete_msg_timer(message.chat.id, [no_res.message_id, message.message_id], 300)
         return
 
-    # If we reached here, we have matches. Track it.
-    db.track_search(query)
+    # If we reached here, we have matches.
+    # But we ONLY track if it's high confidence or from a selection
 
     if best_matches[0][1] >= 90:
+        db.track_search(best_matches[0][0]) # Track the matched keyword
         data = db.get_filter(best_matches[0][0])
         send_final_result(message, data, message.message_id)
     else:
@@ -197,6 +199,7 @@ def handle_callbacks(call):
     elif data[0] == "res":
         filter_data = db.get_filter_by_mid(int(data[1]))
         if filter_data:
+            db.track_search(filter_data['keyword']) # Track when user selects from menu
             try: bot.delete_message(call.message.chat.id, call.message.message_id)
             except: pass
             send_final_result(call.message, filter_data, int(data[3]))
