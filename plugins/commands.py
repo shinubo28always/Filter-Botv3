@@ -13,6 +13,21 @@ import config
 import database as db
 from telebot import types
 
+# ================= HELP & ABOUT COMMANDS ==================
+@bot.message_handler(commands=['help'])
+def help_command(message):
+    text = config.HELP_MSG
+    markup = types.InlineKeyboardMarkup()
+    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    bot.reply_to(message, text, reply_markup=markup, parse_mode='HTML')
+
+@bot.message_handler(commands=['about'])
+def about_command(message):
+    text = config.ABOUT_MSG
+    markup = types.InlineKeyboardMarkup()
+    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    bot.reply_to(message, text, reply_markup=markup, parse_mode='HTML')
+
 # ================= START COMMAND LOGIC ==================
 @bot.message_handler(commands=['start'])
 def start_handler(message):

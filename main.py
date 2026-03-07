@@ -53,6 +53,7 @@ if __name__ == "__main__":
     # 3. POLLING WITH BROAD PERMISSIONS
     while True:
         try:
+            print("📡 Bot is now polling...")
             bot.infinity_polling(
                 timeout=60, 
                 skip_pending=True,
@@ -60,6 +61,6 @@ if __name__ == "__main__":
             )
         except Exception as e:
             print(f"⚠️ Polling Error: {e}")
-            time.sleep(10) # Conflict hone par 10s wait
+            time.sleep(10) # Wait 10s on conflict/error
 
 # Join & Support Us! @DogeshBhai_Pure_Bot!
