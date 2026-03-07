@@ -93,7 +93,7 @@ def search_handler(message):
     if found_kw:
         data = db.get_filter(found_kw)
         if data:
-            db.track_search(found_kw)
+            db.track_anime_hit(data['title'])
             return send_final_result(message, data, message.message_id)
 
     # 4. FUZZY SEARCH
@@ -110,9 +110,10 @@ def search_handler(message):
     # But we ONLY track if it's high confidence or from a selection
 
     if best_matches[0][1] >= 90:
-        db.track_search(best_matches[0][0]) # Track the matched keyword
         data = db.get_filter(best_matches[0][0])
-        send_final_result(message, data, message.message_id)
+        if data:
+            db.track_anime_hit(data['title']) # Track by title
+            send_final_result(message, data, message.message_id)
     else:
         # Show selection menu for fuzzy matches
         markup = types.InlineKeyboardMarkup()
@@ -199,7 +200,7 @@ def handle_callbacks(call):
     elif data[0] == "res":
         filter_data = db.get_filter_by_mid(int(data[1]))
         if filter_data:
-            db.track_search(filter_data['keyword']) # Track when user selects from menu
+            db.track_anime_hit(filter_data['title']) # Track by title
             try: bot.delete_message(call.message.chat.id, call.message.message_id)
             except: pass
             send_final_result(call.message, filter_data, int(data[3]))

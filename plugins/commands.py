@@ -177,8 +177,8 @@ def topsearch_cmd(message):
     if not top:
         return bot.reply_to(message, "🔥 <b>No searches tracked yet.</b>", parse_mode='HTML')
 
-    top_txt = "\n".join([f"{i+1}. <code>{t['keyword']}</code>: {t['count']}" for i, t in enumerate(top)])
-    res = f"🔥 <b>Top 10 Trending Searches:</b>\n\n{top_txt}"
+    top_txt = "\n".join([f"{i+1}. <b>{t['title'].upper()}</b> — <code>{t['count']}</code>" for i, t in enumerate(top)])
+    res = f"🔥 <b>Top 10 Trending Anime:</b>\n\n{top_txt}"
 
     markup = types.InlineKeyboardMarkup()
     if is_admin:
@@ -210,8 +210,8 @@ def topsearch_callback(call):
         except: pass
         return
 
-    top_txt = "\n".join([f"{i+1}. <code>{t['keyword']}</code>: {t['count']}" for i, t in enumerate(top)])
-    res = f"🔥 <b>Top 10 Trending Searches:</b>\n\n{top_txt}"
+    top_txt = "\n".join([f"{i+1}. <b>{t['title'].upper()}</b> — <code>{t['count']}</code>" for i, t in enumerate(top)])
+    res = f"🔥 <b>Top 10 Trending Anime:</b>\n\n{top_txt}"
 
     markup = types.InlineKeyboardMarkup()
     markup.row(

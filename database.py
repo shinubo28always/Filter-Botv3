@@ -84,6 +84,6 @@ def ban_user(uid): banned_col.update_one({"_id": str(uid)}, {"$set": {"_id": str
 def unban_user(uid): return banned_col.delete_one({"_id": str(uid)}).deleted_count
 def is_banned(uid): return banned_col.find_one({"_id": str(uid)}) is not None
 
-def track_search(keyword): track_col.update_one({"keyword": keyword.lower().strip()}, {"$inc": {"count": 1}}, upsert=True)
+def track_anime_hit(title): track_col.update_one({"title": title}, {"$inc": {"count": 1}}, upsert=True)
 def get_top_searches(limit=10): return list(track_col.find().sort("count", -1).limit(limit))
 def clear_top_searches(): return track_col.delete_many({}).deleted_count
