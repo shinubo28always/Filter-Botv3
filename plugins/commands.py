@@ -156,9 +156,6 @@ def stats_cmd(message):
     u_count = len(db.get_all_users())
     f_count = len(db.get_all_filters_list())
 
-    top = db.get_top_searches(10)
-    top_txt = "\n".join([f"• <code>{t['keyword']}</code>: {t['count']}" for t in top]) if top else "No data yet."
-
     top_grp = db.get_top_groups(5)
     grp_txt = "\n".join([f"• <b>{g['title']}</b>: {g.get('activity', 0)}" for g in top_grp]) if top_grp else "No data yet."
 
@@ -166,10 +163,26 @@ def stats_cmd(message):
         f"📊 <b>Bot Statistics:</b>\n\n"
         f"👤 Users: <code>{u_count}</code>\n"
         f"📂 Filters: <code>{f_count}</code>\n\n"
-        f"🔥 <b>Top 10 Searches:</b>\n{top_txt}\n\n"
         f"🏆 <b>Top 5 Active Groups:</b>\n{grp_txt}"
     )
     bot.reply_to(message, res, parse_mode='HTML')
+
+@bot.message_handler(commands=['topsearch'])
+def topsearch_cmd(message):
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
+
+    # Show Top 20 for more detail in dedicated command
+    top = db.get_top_searches(20)
+    if not top:
+        return bot.reply_to(message, "🔥 <b>No searches tracked yet.</b>", parse_mode='HTML')
+
+    top_txt = "\n".join([f"• <code>{t['keyword']}</code>: {t['count']}" for t in top])
+    res = f"🔥 <b>Top 20 Trending Searches:</b>\n\n{top_txt}"
+
+    markup = types.InlineKeyboardMarkup()
+    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    bot.reply_to(message, res, reply_markup=markup, parse_mode='HTML')
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):

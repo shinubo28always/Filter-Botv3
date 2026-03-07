@@ -46,9 +46,10 @@ def search_handler(message):
     db.add_user(uid)
     if message.chat.type in ['group', 'supergroup']: db.track_group_activity(message.chat.id)
     query = message.text.lower().strip()
-    db.track_search(query)
 
-    # 1. FSUB CHECK
+    # Track search ONLY if it's PM or if it looks like a real query (length check + not noise)
+    # We delay tracking until we see if it has ANY matching potential to avoid group noise
+    is_private = message.chat.type == "private"
     if message.chat.type == "private":
         all_fsubs = db.get_all_fsub()
         missing = []
@@ -77,26 +78,41 @@ def search_handler(message):
         # but the wait_msg/index_page will be deleted by delete_msg_timer in send_index_page
         return
 
-    # 3. KEYWORD SCANNING (Slots)
+    # 3. EXACT MATCH (Highest Priority)
+    exact_data = db.get_filter(query)
+    if exact_data:
+        db.track_search(query) # Valid search found
+        return send_final_result(message, exact_data, message.message_id)
+
+    # 4. KEYWORD SCANNING (Slots & Tags)
     all_kws = db.get_all_keywords()
-    for word in query.split():
+    query_parts = query.split()
+    for word in query_parts:
+        if len(word) < 3: continue # Ignore very short words for scanning
         data = db.get_filter(word)
         if data and data.get('type') == 'slot':
+            db.track_search(word)
             return send_final_result(message, data, message.message_id)
 
-    # 4. FUZZY SEARCH
+    # 5. FUZZY SEARCH
     matches = process.extract(query, all_kws, limit=10, scorer=fuzz.token_sort_ratio)
     best_matches = [m for m in matches if m[1] >= FUZZY_THRESHOLD]
+
     if not best_matches:
-        if message.chat.type == "private":
+        if is_private:
+            db.track_search(query) # Track even failed searches in PM to see what users want
             no_res = bot.reply_to(message, "❌ <b>No results found!</b>")
             delete_msg_timer(message.chat.id, [no_res.message_id, message.message_id], 300)
         return
 
-    if best_matches[0][1] >= 95:
+    # If we reached here, we have matches. Track it.
+    db.track_search(query)
+
+    if best_matches[0][1] >= 90:
         data = db.get_filter(best_matches[0][0])
         send_final_result(message, data, message.message_id)
     else:
+        # Show selection menu for fuzzy matches
         markup = types.InlineKeyboardMarkup()
         seen_titles = set()
         for b in best_matches:

@@ -16,6 +16,17 @@ def handle_join_request(request):
     cid = request.chat.id
     db.add_pending_request(uid, cid)
 
+    # Auto Approve logic
+    info = db.get_fsub_info(cid)
+    if info and info.get('auto_approve'):
+        try:
+            bot.approve_chat_join_request(cid, uid)
+            db.del_pending_request(uid, cid)
+            bot.send_message(uid, f"✅ <b>Your request to join '{request.chat.title}' was automatically approved!</b>")
+            return
+        except Exception as e:
+            print(f"Auto-approve error: {e}")
+
     # Notify user (Optional but good)
     try:
         bot.send_message(uid, f"📥 <b>Your Request to Join '{request.chat.title}' has been received!</b>\n\nYou can now search for anime while your request is pending.")

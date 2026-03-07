@@ -46,6 +46,7 @@ def get_anime_details(anilist_id):
         season
         seasonYear
         genres
+        bannerImage
         coverImage {
           extraLarge
         }
@@ -62,7 +63,9 @@ def get_anime_details(anilist_id):
         episodes = d.get('episodes') or "N/A"
         season = f"{d.get('season') or 'N/A'} {d.get('seasonYear') or ''}".strip().lower()
         genres = ", ".join(d.get('genres', []))
-        poster = d['coverImage']['extraLarge']
+
+        # Prefer bannerImage (landscape/wide) over coverImage (portrait)
+        poster = d.get('bannerImage') or d['coverImage']['extraLarge']
         
         caption = (
             f"<b>🔰 {title} </b>\n"

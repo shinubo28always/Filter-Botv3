@@ -87,11 +87,15 @@ def manage_channel_ui(call):
         types.InlineKeyboardButton("🔴 Normal", callback_data=f"fsub_upd|normal|{cid}"),
         types.InlineKeyboardButton("🟢 Request", callback_data=f"fsub_upd|request|{cid}")
     )
+
+    auto_text = "✅ Auto-Approve: ON" if info.get('auto_approve') else "❌ Auto-Approve: OFF"
+    markup.add(types.InlineKeyboardButton(auto_text, callback_data=f"fsub_auto|{cid}"))
+
     markup.add(types.InlineKeyboardButton("🗑️ Remove Channel", callback_data=f"fsub_del_single|{cid}"))
     markup.add(types.InlineKeyboardButton("⬅️ Back to List", callback_data="fsub_back"))
     
     curr_mode = "🔴 Normal" if info.get('mode') == "normal" else "🟢 Request"
-    txt = f"⚙️ <b>Manage Channel:</b>\n\nName: <b>{info['title']}</b>\nID: <code>{cid}</code>\nMode: <b>{curr_mode}</b>\n\nChoose new mode below:"
+    txt = f"⚙️ <b>Manage Channel:</b>\n\nName: <b>{info['title']}</b>\nID: <code>{cid}</code>\nMode: <b>{curr_mode}</b>\nAuto-Approve: <b>{'ON' if info.get('auto_approve') else 'OFF'}</b>\n\nChoose new mode below:"
     bot.edit_message_text(txt, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="HTML")
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_upd|"))
@@ -102,8 +106,18 @@ def update_mode_callback(call):
     emoji = "🔴 Normal" if mode == "normal" else "🟢 Request"
     bot.answer_callback_query(call.id, f"✅ Switched to {emoji}")
     
-    # Bina sleep ke seedha refresh karein (behtar UX)
-    send_main_menu(call.message.chat.id, edit_mid=call.message.message_id)
+    # Refresh current management menu instead of main menu
+    manage_channel_ui(call)
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_auto|"))
+def toggle_auto_approve(call):
+    cid = call.data.split("|")[1]
+    info = db.get_fsub_info(cid)
+    new_status = not info.get('auto_approve', False)
+    db.set_fsub_auto_approve(cid, new_status)
+
+    bot.answer_callback_query(call.id, f"Auto-Approve: {'ON' if new_status else 'OFF'}")
+    manage_channel_ui(call)
 
 @bot.callback_query_handler(func=lambda call: call.data == "fsub_back")
 def back_to_fsub_list(call):

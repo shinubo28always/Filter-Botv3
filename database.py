@@ -53,6 +53,7 @@ def add_fsub_chnl(chat_id, title, mode): fsub_col.update_one({"_id": str(chat_id
 def get_all_fsub(): return list(fsub_col.find())
 def get_fsub_info(chat_id): return fsub_col.find_one({"_id": str(chat_id)})
 def update_fsub_mode(chat_id, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": mode}})
+def set_fsub_auto_approve(chat_id, status): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"auto_approve": bool(status)}})
 def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_count
 def del_all_fsub_chnls(): return fsub_col.delete_many({}).deleted_count
 

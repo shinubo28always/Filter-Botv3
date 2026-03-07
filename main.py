@@ -37,13 +37,18 @@ import plugins.slots
 app = Flask(__name__)
 @app.route('/')
 def health():
-    # Optional: Check DB connectivity here
+    # Check DB connectivity
     try:
-        from database import db
-        db.command('ping')
-        return "Bot is Alive & DB is Connected!", 200
+        db.db.command('ping')
+        return {
+            "status": "alive",
+            "database": "connected",
+            "uptime": time.time() - start_time
+        }, 200
     except Exception as e:
-        return f"Bot is Alive but DB Error: {e}", 500
+        return {"status": "alive", "database": "error", "error": str(e)}, 500
+
+start_time = time.time()
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -80,9 +85,10 @@ if __name__ == "__main__":
         try:
             logger.info("📡 Bot is now polling...")
             bot.infinity_polling(
-                timeout=60, 
+                timeout=90,
                 skip_pending=True,
-                allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member', 'chat_join_request']
+                allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member', 'chat_join_request'],
+                logger_level=logging.ERROR
             )
         except Exception as e:
             if "409" in str(e):
