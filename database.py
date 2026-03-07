@@ -84,6 +84,36 @@ def ban_user(uid): banned_col.update_one({"_id": str(uid)}, {"$set": {"_id": str
 def unban_user(uid): return banned_col.delete_one({"_id": str(uid)}).deleted_count
 def is_banned(uid): return banned_col.find_one({"_id": str(uid)}) is not None
 
-def track_anime_hit(title): track_col.update_one({"title": title}, {"$inc": {"count": 1}}, upsert=True)
-def get_top_searches(limit=10): return list(track_col.find().sort("count", -1).limit(limit))
+def track_anime_hit(title):
+    # Normalize: Strip and Uppercase to avoid duplicates like "Fairy Tail" vs "FAIRY TAIL"
+    clean_title = str(title).strip().upper()
+    track_col.update_one({"title": clean_title}, {"$inc": {"count": 1}}, upsert=True)
+
+def get_top_searches(limit=10):
+    # Aggregation pipeline to merge legacy duplicates and handle potential missing titles
+    pipeline = [
+        {
+            "$project": {
+                "display_title": {
+                    "$toUpper": {
+                        "$trim": {
+                            "input": { "$ifNull": ["$title", "$keyword"] }
+                        }
+                    }
+                },
+                "count": 1
+            }
+        },
+        {
+            "$group": {
+                "_id": "$display_title",
+                "count": { "$sum": "$count" }
+            }
+        },
+        { "$sort": { "count": -1 } },
+        { "$limit": limit }
+    ]
+    results = list(track_col.aggregate(pipeline))
+    # Map back to a format compatible with existing UI logic
+    return [{"title": r["_id"], "count": r["count"]} for r in results]
 def clear_top_searches(): return track_col.delete_many({}).deleted_count
