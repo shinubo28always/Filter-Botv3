@@ -12,6 +12,10 @@ from thefuzz import process, fuzz
 ITEMS_PER_PAGE = 5   
 FUZZY_THRESHOLD = 80 
 
+# Simple in-memory rate limiting: {uid: last_search_time}
+RATE_LIMITS = {}
+COOLDOWN = 3 # 3 seconds cooldown between searches
+
 def delete_msg_timer(chat_id, message_ids, delay):
     def delayed_delete():
         time.sleep(delay)
@@ -24,6 +28,15 @@ def delete_msg_timer(chat_id, message_ids, delay):
 def search_handler(message):
     if message.text.startswith("/"): return
     uid = message.from_user.id
+
+    # 0. RATE LIMIT CHECK
+    now = time.time()
+    if uid in RATE_LIMITS and (now - RATE_LIMITS[uid]) < COOLDOWN:
+        try: bot.answer_callback_query(message.chat.id, "⚠️ Too fast! Wait 3s.", show_alert=False) # Wait, this is msg handler
+        except: pass
+        return # Ignore spam
+    RATE_LIMITS[uid] = now
+
     db.add_user(uid)
     query = message.text.lower().strip()
 
