@@ -13,6 +13,8 @@ TEMP_SETUP = {}
 @bot.callback_query_handler(func=lambda call: call.data.startswith("setup"))
 def init_setup(call):
     uid = call.from_user.id
+    if not db.is_admin(uid):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     cid = int(call.data.split("|")[1])
     try: bot.delete_message(call.message.chat.id, call.message.message_id)
     except: pass
@@ -52,6 +54,8 @@ def search_and_show_options(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith("pick_ani|"))
 def pick_anime(call):
     uid = call.from_user.id
+    if not db.is_admin(uid):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     ani_id = int(call.data.split("|")[1])
     if uid not in TEMP_SETUP: return
     
@@ -70,6 +74,8 @@ def pick_anime(call):
 @bot.callback_query_handler(func=lambda call: call.data == "conf_save")
 def conf_save(call):
     uid = call.from_user.id
+    if not db.is_admin(uid):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     if uid not in TEMP_SETUP: return
     try: bot.delete_message(uid, call.message.message_id)
     except: pass
@@ -102,5 +108,7 @@ def finalize(message):
 @bot.callback_query_handler(func=lambda call: call.data == "cancel_setup")
 def cancel_setup(call):
     uid = call.from_user.id
+    if not db.is_admin(uid):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     if uid in TEMP_SETUP: del TEMP_SETUP[uid]
     bot.edit_message_text("❌ Setup Cancelled.", call.message.chat.id, call.message.message_id)
