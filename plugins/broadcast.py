@@ -5,13 +5,20 @@ from bot_instance import bot
 from telebot import apihelper, types
 import database as db
 
-def run_bc(targets, mid, f_chat, mode, admin_id, s_mid):
+def run_bc(targets, mid, f_chat, mode, admin_id, s_mid, button=None):
     done = blocked = deleted = unsuc = 0
     total = len(targets)
     
+    markup = None
+    if button:
+        try:
+            name, url = button.split("|")
+            markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton(name, url=url))
+        except: pass
+
     for t_id in targets:
         try:
-            bot.copy_message(t_id, f_chat, mid)
+            bot.copy_message(t_id, f_chat, mid, reply_markup=markup)
             done += 1
         except apihelper.ApiTelegramException as e:
             if e.error_code == 403: blocked += 1; db.del_user(t_id)
@@ -32,12 +39,16 @@ def run_bc(targets, mid, f_chat, mode, admin_id, s_mid):
 @bot.message_handler(commands=['broadcast', 'gbroadcast'])
 def bc_handler(message):
     if not db.is_admin(message.from_user.id): return
-    if not message.reply_to_message: return bot.reply_to(message, "Reply to a message.")
+    if not message.reply_to_message:
+        return bot.reply_to(message, "⚠️ <b>Reply to a message to broadcast.</b>\n\nOptional button: <code>/broadcast Name|URL</code>", parse_mode="HTML")
+
+    parts = message.text.split(maxsplit=1)
+    button = parts[1] if len(parts) > 1 else None
     
     mode = "PM" if "gbroadcast" not in message.text else "Group"
     targets = db.get_all_users() if mode == "PM" else db.get_all_groups()
     
     s = bot.reply_to(message, "<i>ʙʀᴏᴀᴅᴄᴀꜱᴛ ᴘʀᴏᴄᴇꜱꜱɪɴɢ....</i>")
-    threading.Thread(target=run_bc, args=(targets, message.reply_to_message.message_id, message.chat.id, mode, message.chat.id, s.message_id)).start()
+    threading.Thread(target=run_bc, args=(targets, message.reply_to_message.message_id, message.chat.id, mode, message.chat.id, s.message_id, button)).start()
 
 # Join & Support Us! @DogeshBhai_Pure_Bot

@@ -154,7 +154,17 @@ def stats_cmd(message):
     if not db.is_admin(message.from_user.id): return
     u_count = len(db.get_all_users())
     f_count = len(db.get_all_filters_list())
-    bot.reply_to(message, f"📊 <b>Bot Statistics:</b>\n\n👤 Users: <code>{u_count}</code>\n📂 Filters: <code>{f_count}</code>", parse_mode='HTML')
+
+    top = db.get_top_searches(10)
+    top_txt = "\n".join([f"• <code>{t['keyword']}</code>: {t['count']}" for t in top]) if top else "No data yet."
+
+    res = (
+        f"📊 <b>Bot Statistics:</b>\n\n"
+        f"👤 Users: <code>{u_count}</code>\n"
+        f"📂 Filters: <code>{f_count}</code>\n\n"
+        f"🔥 <b>Top 10 Searches:</b>\n{top_txt}"
+    )
+    bot.reply_to(message, res, parse_mode='HTML')
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):

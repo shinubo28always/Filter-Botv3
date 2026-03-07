@@ -20,6 +20,7 @@ sys.path.append(os.getcwd())
 
 from bot_instance import bot
 import config
+import database as db
 from utils import send_log
 
 # Import Plugins in specific order
@@ -52,6 +53,13 @@ if __name__ == "__main__":
     # 1. Flask Start
     threading.Thread(target=run_flask, daemon=True).start()
     
+    # 2. DATABASE CLEANUP
+    try:
+        deleted_reqs = db.cleanup_old_requests(30)
+        if deleted_reqs: logger.info(f"🧹 Cleaned up {deleted_reqs} old requests.")
+    except Exception as e:
+        logger.warning(f"Cleanup error: {e}")
+
     # 2. FORCE CLEANUP
     logger.info("🔄 Clearing sessions and pending updates...")
     try:

@@ -59,6 +59,8 @@ The bot requires the following environment variables:
 - `/add_admin <user_id>` - Add a new admin (Owner only).
 - `/del_admin <user_id>` - Remove an admin (Owner only).
 - `/admins` - List all authorized bot admins.
+- `/ban <user_id>` - Ban a user from using the bot.
+- `/unban <user_id>` - Unban a user.
 - `/broadcast` - (Reply to msg) Broadcast message to all bot users.
 - `/gbroadcast` - (Reply to msg) Broadcast message to all groups where the bot is added.
 - `/add_fsub <channel_id>` - Add a channel to Force Subscription.

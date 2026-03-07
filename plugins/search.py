@@ -29,6 +29,10 @@ def search_handler(message):
     if message.text.startswith("/"): return
     uid = message.from_user.id
 
+    # 0. BAN CHECK
+    if db.is_banned(uid):
+        return # Silently ignore banned users
+
     # 0. MAINTENANCE CHECK
     if db.get_maintenance() and not db.is_admin(uid):
         return bot.reply_to(message, "🛠 <b>Bot is under maintenance. Please try again later!</b>")
@@ -41,6 +45,7 @@ def search_handler(message):
 
     db.add_user(uid)
     query = message.text.lower().strip()
+    db.track_search(query)
 
     # 1. FSUB CHECK
     if message.chat.type == "private":

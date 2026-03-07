@@ -10,7 +10,7 @@ try:
 except Exception as e:
     print(f"❌ MongoDB Error: {e}"); sys.exit(1)
 
-users, groups, filters, admins, fsub_col, req_col, settings = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings']
+users, groups, filters, admins, fsub_col, req_col, settings, banned_col, track_col = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings'], db['banned'], db['top_searches']
 
 def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 def get_all_users(): return [u['_id'] for u in users.find()]
@@ -63,8 +63,18 @@ def save_request(uid, first_name, query):
 def get_pending_requests(): return list(req_col.find().sort("time", -1))
 def delete_request(uid, query): return req_col.delete_one({"uid": str(uid), "query": query}).deleted_count
 def delete_all_requests(): return req_col.delete_many({}).deleted_count
+def cleanup_old_requests(days=30):
+    limit = time.time() - (days * 24 * 3600)
+    return req_col.delete_many({"time": {"$lt": limit}}).deleted_count
 
 def set_maintenance(status): settings.update_one({"_id": "maintenance"}, {"$set": {"status": bool(status)}}, upsert=True)
 def get_maintenance():
     data = settings.find_one({"_id": "maintenance"})
     return data['status'] if data else False
+
+def ban_user(uid): banned_col.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
+def unban_user(uid): return banned_col.delete_one({"_id": str(uid)}).deleted_count
+def is_banned(uid): return banned_col.find_one({"_id": str(uid)}) is not None
+
+def track_search(keyword): track_col.update_one({"keyword": keyword.lower().strip()}, {"$inc": {"count": 1}}, upsert=True)
+def get_top_searches(limit=10): return list(track_col.find().sort("count", -1).limit(limit))

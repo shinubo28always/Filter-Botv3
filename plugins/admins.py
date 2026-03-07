@@ -49,6 +49,26 @@ def add_admin_handler(message):
     except Exception as e:
         bot.reply_to(message, f"❌ <b>Critical Error:</b> {e}")
 
+@bot.message_handler(commands=['ban'])
+def ban_user_handler(message):
+    if not db.is_admin(message.from_user.id): return
+    parts = message.text.split()
+    if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/ban user_id</code>")
+    uid = parts[1]
+    db.ban_user(uid)
+    bot.reply_to(message, f"🚫 <b>User Banned:</b> <code>{uid}</code>")
+
+@bot.message_handler(commands=['unban'])
+def unban_user_handler(message):
+    if not db.is_admin(message.from_user.id): return
+    parts = message.text.split()
+    if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/unban user_id</code>")
+    uid = parts[1]
+    if db.unban_user(uid):
+        bot.reply_to(message, f"✅ <b>User Unbanned:</b> <code>{uid}</code>")
+    else:
+        bot.reply_to(message, "❌ <b>User not found in ban list.</b>")
+
 @bot.message_handler(commands=['del_admin'])
 def del_admin_handler(message):
     if str(message.from_user.id) != str(config.OWNER_ID):
