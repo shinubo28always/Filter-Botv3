@@ -52,7 +52,8 @@ def add_admin_handler(message):
 
 @bot.message_handler(commands=['ban'])
 def ban_user_handler(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_BROADCAST_BAN, parse_mode="HTML")
     parts = message.text.split()
     if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/ban user_id</code>")
     uid = parts[1]
@@ -61,7 +62,8 @@ def ban_user_handler(message):
 
 @bot.message_handler(commands=['unban'])
 def unban_user_handler(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_BROADCAST_BAN, parse_mode="HTML")
     parts = message.text.split()
     if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/unban user_id</code>")
     uid = parts[1]
@@ -102,7 +104,8 @@ def del_admin_handler(message):
 
 @bot.message_handler(commands=['maintenance'])
 def toggle_maintenance(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
 
     curr = db.get_maintenance()
     new_status = not curr
@@ -113,7 +116,8 @@ def toggle_maintenance(message):
 
 @bot.message_handler(commands=['backup'])
 def backup_database(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
 
     msg = bot.reply_to(message, "📤 <b>Generating Filter Backup...</b>")
 
@@ -139,7 +143,8 @@ def backup_database(message):
 
 @bot.message_handler(commands=['admins'])
 def list_admins_handler(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
     
     status_msg = bot.reply_to(message, "⏳ <b>Fetching Admin List...</b>")
     admin_ids = db.get_all_admins()

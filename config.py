@@ -64,4 +64,8 @@ GROUP_AUTH_MSG = (
 
 HELP_MSG = "<blockquote><b>Simply type any anime name (for example:</b> <i>Naruto</i>) <b>and the bot will provide a verified channel link where the anime is available.\n\n🚀 Smart Feature:\nIf the anime you are looking for is not available, you can use the /request command to submit a request for future uploads.</b></blockquote>\n<b>Developed by:</b> <i>@UNRATED_CODER</i>"
 ABOUT_MSG = "<blockquote><b>This bot is fast, secure, and reliable, providing access only to official and verified Telegram channels. There is no risk of device hacking or any unauthorized activity.</b>\n\n<b>The system is optimized for speed and privacy, ensuring a smooth and safe experience for every user.</b>\n<b>For quick access, you can request an index by sending a single word (for example:</b> <i>A</i>) <b>and receive the related index instantly.</b></blockquote>\n<b>Developed By:</b> <i>@UNRATED_CODER</i>"
+
+# Roast Messages for Non-Admins
+ROAST_BROADCAST_BAN = "🤣 <b>Bhaag yahan se! Broadcast aur Ban tere bas ki baat nahi hai.</b>"
+ROAST_GENERAL = "🌚 <b>Beta, Admin commands ke sapne mat dekh. Jaake Pogo dekh!</b>"
 # Join & Support Us! @UNRATED_CODER

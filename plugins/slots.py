@@ -15,7 +15,8 @@ TEMP_SLOTS = {}
 
 @bot.message_handler(commands=['add_slot'])
 def add_slot_start(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
     
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2:

@@ -8,7 +8,7 @@ import time
 # --- UTILS: ADMIN CHECK ---
 def check_admin(message):
     if not db.is_admin(message.from_user.id):
-        bot.reply_to(message, "❌ **You are not authorized!**")
+        bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
         return False
     return True
 

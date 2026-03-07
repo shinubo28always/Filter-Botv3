@@ -92,7 +92,8 @@ def process_request_text(message, query):
 
 @bot.message_handler(commands=['requests'])
 def list_requests_handler(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
 
     reqs = db.get_pending_requests()
     if not reqs:

@@ -151,7 +151,8 @@ def ping_cmd(message):
 
 @bot.message_handler(commands=['stats'])
 def stats_cmd(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
     u_count = len(db.get_all_users())
     f_count = len(db.get_all_filters_list())
 
@@ -172,7 +173,8 @@ def stats_cmd(message):
 
 @bot.message_handler(commands=['filters'])
 def list_filters(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
     fs = db.get_all_filters_list()
     if not fs: return bot.reply_to(message, "📂 <b>Database is empty!</b>")
 
@@ -190,7 +192,8 @@ def list_filters(message):
 
 @bot.message_handler(commands=['del_filter'])
 def delete_filter_cmd(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_GENERAL, parse_mode="HTML")
     parts = message.text.split(maxsplit=1)
     if len(parts) < 2: return bot.reply_to(message, "⚠️ <b>Usage:</b> <code>/del_filter name</code>")
     target = parts[1].lower().strip()
@@ -234,12 +237,30 @@ def user_profile_handler(message):
 
 @bot.message_handler(commands=['id'])
 def send_id_info(message):
-    target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
-    uid = target_user.id
-    mention = f'<a href="tg://user?id={uid}">{html.escape(target_user.first_name)}</a>'
-    text = f"{mention}'s ID: <code>{uid}</code>"
-    if message.chat.type in ['group', 'supergroup']:
-        text += f"\nGroup ID: <code>{message.chat.id}</code>"
+    if message.reply_to_message:
+        # Replying to a message: Get IDs of the replied source
+        rep = message.reply_to_message
+
+        if rep.forward_from:
+            # User forwarded message
+            text = f"👤 <b>User ID:</b> <code>{rep.forward_from.id}</code>"
+        elif rep.forward_from_chat:
+            # Channel/Group forwarded message
+            text = f"📢 <b>Chat ID:</b> <code>{rep.forward_from_chat.id}</code>"
+        elif rep.from_user:
+            # Direct message from user
+            text = f"👤 <b>User ID:</b> <code>{rep.from_user.id}</code>"
+            if rep.chat.type in ['group', 'supergroup', 'channel']:
+                text += f"\n📢 <b>Chat ID:</b> <code>{rep.chat.id}</code>"
+        else:
+            text = f"📢 <b>Chat ID:</b> <code>{rep.chat.id}</code>"
+    else:
+        # Not replying: Show sender and current chat IDs
+        uid = message.from_user.id
+        text = f"👤 <b>Your ID:</b> <code>{uid}</code>"
+        if message.chat.type != 'private':
+            text += f"\n📢 <b>Chat ID:</b> <code>{message.chat.id}</code>"
+
     bot.reply_to(message, text, parse_mode="HTML")
 
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###

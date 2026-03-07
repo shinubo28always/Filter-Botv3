@@ -38,7 +38,8 @@ def run_bc(targets, mid, f_chat, mode, admin_id, s_mid, button=None):
 
 @bot.message_handler(commands=['broadcast', 'gbroadcast'])
 def bc_handler(message):
-    if not db.is_admin(message.from_user.id): return
+    if not db.is_admin(message.from_user.id):
+        return bot.reply_to(message, config.ROAST_BROADCAST_BAN, parse_mode="HTML")
     if not message.reply_to_message:
         return bot.reply_to(message, "⚠️ <b>Reply to a message to broadcast.</b>\n\nOptional button: <code>/broadcast Name|URL</code>", parse_mode="HTML")
 
