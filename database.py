@@ -10,7 +10,7 @@ try:
 except Exception as e:
     print(f"❌ MongoDB Error: {e}"); sys.exit(1)
 
-users, groups, filters, admins, fsub_col, req_col, settings, banned_col, track_col = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings'], db['banned'], db['top_searches']
+users, groups, filters, admins, fsub_col, req_col, settings, banned_col, track_col, pending_join = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings'], db['banned'], db['top_searches'], db['pending_join_requests']
 
 def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}, "$setOnInsert": {"joined_at": time.time()}}, upsert=True)
 def get_user_info(uid): return users.find_one({"_id": str(uid)})
@@ -23,6 +23,10 @@ def get_all_admins(): return [a['_id'] for a in admins.find()]
 def add_group(chat_id, title): groups.update_one({"_id": str(chat_id)}, {"$set": {"title": title}}, upsert=True)
 def track_group_activity(chat_id): groups.update_one({"_id": str(chat_id)}, {"$inc": {"activity": 1}})
 def get_top_groups(limit=5): return list(groups.find().sort("activity", -1).limit(limit))
+
+def add_pending_request(uid, chat_id): pending_join.update_one({"uid": str(uid), "cid": str(chat_id)}, {"$set": {"uid": str(uid), "cid": str(chat_id)}}, upsert=True)
+def del_pending_request(uid, chat_id): return pending_join.delete_one({"uid": str(uid), "cid": str(chat_id)}).deleted_count
+def is_request_pending(uid, chat_id): return pending_join.find_one({"uid": str(uid), "cid": str(chat_id)}) is not None
 def get_all_groups(): return [g['_id'] for g in groups.find()]
 def del_group(chat_id): groups.delete_one({"_id": str(chat_id)})
 

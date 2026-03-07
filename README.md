@@ -7,7 +7,7 @@ A powerful Telegram bot designed to provide verified anime channel links and man
 - **Anime Search**: Search for anime and get verified channel links.
 - **A-Z Indexing**: Browse anime by alphabetical order.
 - **Request System**: Users can request anime, and admins can browse/manage requests.
-- **Force Subscription (FSub)**: Restrict access to subscribers of specific channels.
+- **Force Subscription (FSub)**: Restrict access to subscribers of specific channels. Supports "Request Mode" where pending join requests also grant access.
 - **Maintenance Mode**: Admins can temporarily lock the bot for maintenance.
 - **Database Backup**: Export all filters to a JSON file.
 - **Docker Support**: Easy deployment using Docker and Docker Compose.

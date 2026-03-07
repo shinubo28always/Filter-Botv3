@@ -53,12 +53,21 @@ def search_handler(message):
         all_fsubs = db.get_all_fsub()
         missing = []
         for f in all_fsubs:
-            if f.get("mode") == "request": continue
             try:
+                # Normal check
                 st = bot.get_chat_member(int(f['_id']), uid).status
-                if st not in ['member', 'administrator', 'creator']: missing.append(f)
-            except: missing.append(f)
-        if missing: return send_fsub_message(message, missing, [f for f in all_fsubs if f.get("mode") == "request"])
+                if st in ['member', 'administrator', 'creator']: continue
+
+                # If not a member, check if they have a PENDING Join Request (only for Request Mode channels)
+                if f.get("mode") == "request" and db.is_request_pending(uid, f['_id']):
+                    continue
+
+                missing.append(f)
+            except:
+                missing.append(f)
+
+        if missing:
+            return send_fsub_message(message, missing, [f for f in all_fsubs if f.get("mode") == "request"])
 
     # 2. ALPHABET INDEX (NOW FIXED)
     if len(query) == 1 and query.isalpha():

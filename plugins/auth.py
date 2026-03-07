@@ -10,6 +10,27 @@ import database as db
 import config
 from telebot import types
 
+@bot.chat_join_request_handler()
+def handle_join_request(request):
+    uid = request.from_user.id
+    cid = request.chat.id
+    db.add_pending_request(uid, cid)
+
+    # Notify user (Optional but good)
+    try:
+        bot.send_message(uid, f"📥 <b>Your Request to Join '{request.chat.title}' has been received!</b>\n\nYou can now search for anime while your request is pending.")
+    except: pass
+
+@bot.chat_member_handler()
+def handle_member_status_change(message):
+    uid = message.new_chat_member.user.id
+    cid = message.chat.id
+    status = message.new_chat_member.status
+
+    if status in ['member', 'administrator', 'creator', 'left', 'kicked']:
+        # If they are now a member or left, they no longer have a "pending" join request
+        db.del_pending_request(uid, cid)
+
 @bot.my_chat_member_handler()
 def handle_membership_security(message):
     new = message.new_chat_member
