@@ -6,11 +6,11 @@ A powerful Telegram bot designed to provide verified anime channel links and man
 
 - **Anime Search**: Search for anime and get verified channel links.
 - **A-Z Indexing**: Browse anime by alphabetical order.
-- **Request System**: Users can request anime, and admins can reply directly.
+- **Request System**: Users can request anime, and admins can browse/manage requests.
 - **Force Subscription (FSub)**: Restrict access to subscribers of specific channels.
-- **Admin Tools**: Add/Delete admins, manage filters, broadcast messages, and more.
-- **Custom Slots**: Create custom messages with buttons and save them as filters.
-- **Anilist Integration**: Fetch anime details and posters automatically.
+- **Maintenance Mode**: Admins can temporarily lock the bot for maintenance.
+- **Database Backup**: Export all filters to a JSON file.
+- **Docker Support**: Easy deployment using Docker and Docker Compose.
 
 ## Deployment
 
@@ -44,21 +44,32 @@ The bot requires the following environment variables:
    python main.py
    ```
 
-## Admin Commands
+## Bot Commands
 
-- `/start` - Start the bot.
-- `/help` - Show help message.
-- `/about` - Show bot information.
-- `/stats` - View bot statistics.
-- `/filters` - List all available filters.
+### User Commands
+- `/start` - Start the bot and see welcome options.
+- `/help` - View help information on how to use the bot.
+- `/about` - View details about the bot and developers.
+- `/request <anime_name>` - Submit a request for a missing anime.
+- `/id` - View your Telegram User ID (and Group ID if used in a group).
+
+### Admin/Owner Commands
+- `/stats` - View bot statistics (Users, Filters, etc.).
+- `/filters` - List all available filter keywords.
 - `/add_admin <user_id>` - Add a new admin (Owner only).
 - `/del_admin <user_id>` - Remove an admin (Owner only).
-- `/broadcast` - Reply to a message to broadcast to all users.
-- `/gbroadcast` - Reply to a message to broadcast to all groups.
+- `/admins` - List all authorized bot admins.
+- `/broadcast` - (Reply to msg) Broadcast message to all bot users.
+- `/gbroadcast` - (Reply to msg) Broadcast message to all groups where the bot is added.
 - `/add_fsub <channel_id>` - Add a channel to Force Subscription.
-- `/fsub` - Manage FSub channels.
-- `/add_slot <keyword>` - Create a custom slot filter.
-- `/del_filter <keyword>` - Delete a specific filter or use `/del_filter all`.
+- `/fsub` - Manage and list Force Subscription channels.
+- `/del_fsub <channel_id/all>` - Remove a specific or all FSub channels.
+- `/add_slot <keyword>` - Create a custom slot filter with custom buttons.
+- `/del_filter <keyword/all>` - Delete a specific filter or clear the entire database.
+- `/requests` - View and manage pending user requests via an interactive menu.
+- `/maintenance` - Toggle Maintenance Mode (Non-admins will be blocked from searching).
+- `/backup` - Generate and download a JSON backup of all filters.
+- `/ping` - Check the bot's latency.
 
 ## Credits
 

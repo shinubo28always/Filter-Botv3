@@ -36,9 +36,7 @@ def search_handler(message):
     # 0. RATE LIMIT CHECK
     now = time.time()
     if uid in RATE_LIMITS and (now - RATE_LIMITS[uid]) < COOLDOWN:
-        try: bot.answer_callback_query(message.chat.id, "⚠️ Too fast! Wait 3s.", show_alert=False) # Wait, this is msg handler
-        except: pass
-        return # Ignore spam
+        return # Ignore spam silently to avoid errors in message handler
     RATE_LIMITS[uid] = now
 
     db.add_user(uid)
