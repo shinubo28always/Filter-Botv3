@@ -12,7 +12,8 @@ except Exception as e:
 
 users, groups, filters, admins, fsub_col, req_col, settings, banned_col, track_col = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings'], db['banned'], db['top_searches']
 
-def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
+def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}, "$setOnInsert": {"joined_at": time.time()}}, upsert=True)
+def get_user_info(uid): return users.find_one({"_id": str(uid)})
 def get_all_users(): return [u['_id'] for u in users.find()]
 def del_user(uid): return users.delete_one({"_id": str(uid)}).deleted_count
 def is_admin(uid): return str(uid) == str(config.OWNER_ID) or admins.find_one({"_id": str(uid)}) is not None
@@ -20,6 +21,8 @@ def add_admin(uid): admins.update_one({"_id": str(uid)}, {"$set": {"_id": str(ui
 def del_admin(uid): return admins.delete_one({"_id": str(uid)}).deleted_count
 def get_all_admins(): return [a['_id'] for a in admins.find()]
 def add_group(chat_id, title): groups.update_one({"_id": str(chat_id)}, {"$set": {"title": title}}, upsert=True)
+def track_group_activity(chat_id): groups.update_one({"_id": str(chat_id)}, {"$inc": {"activity": 1}})
+def get_top_groups(limit=5): return list(groups.find().sort("activity", -1).limit(limit))
 def get_all_groups(): return [g['_id'] for g in groups.find()]
 def del_group(chat_id): groups.delete_one({"_id": str(chat_id)})
 

@@ -44,6 +44,7 @@ def search_handler(message):
     RATE_LIMITS[uid] = now
 
     db.add_user(uid)
+    if message.chat.type in ['group', 'supergroup']: db.track_group_activity(message.chat.id)
     query = message.text.lower().strip()
     db.track_search(query)
 

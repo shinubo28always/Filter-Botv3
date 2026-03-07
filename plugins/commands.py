@@ -158,11 +158,15 @@ def stats_cmd(message):
     top = db.get_top_searches(10)
     top_txt = "\n".join([f"• <code>{t['keyword']}</code>: {t['count']}" for t in top]) if top else "No data yet."
 
+    top_grp = db.get_top_groups(5)
+    grp_txt = "\n".join([f"• <b>{g['title']}</b>: {g.get('activity', 0)}" for g in top_grp]) if top_grp else "No data yet."
+
     res = (
         f"📊 <b>Bot Statistics:</b>\n\n"
         f"👤 Users: <code>{u_count}</code>\n"
         f"📂 Filters: <code>{f_count}</code>\n\n"
-        f"🔥 <b>Top 10 Searches:</b>\n{top_txt}"
+        f"🔥 <b>Top 10 Searches:</b>\n{top_txt}\n\n"
+        f"🏆 <b>Top 5 Active Groups:</b>\n{grp_txt}"
     )
     bot.reply_to(message, res, parse_mode='HTML')
 
@@ -207,36 +211,36 @@ def handle_del_all_callback(call):
     count = db.delete_all_filters()
     bot.edit_message_text(f"🗑️ <b>Total {count} filters deleted!</b>", call.message.chat.id, call.message.message_id, parse_mode='HTML')
 
+@bot.message_handler(commands=['me'])
+def user_profile_handler(message):
+    uid = message.from_user.id
+    first_name = html.escape(message.from_user.first_name)
+
+    u_data = db.get_user_info(uid)
+    rank = "Owner 👑" if str(uid) == str(config.OWNER_ID) else ("Admin 👮" if db.is_admin(uid) else "User 👤")
+
+    joined_date = "Unknown"
+    if u_data and 'joined_at' in u_data:
+        joined_date = time.strftime("%Y-%m-%d", time.gmtime(u_data['joined_at']))
+
+    text = (
+        f"👤 <b>User Profile:</b>\n\n"
+        f"🏷 <b>Name:</b> {first_name}\n"
+        f"🆔 <b>ID:</b> <code>{uid}</code>\n"
+        f"🎖 <b>Rank:</b> {rank}\n"
+        f"📅 <b>Joined:</b> {joined_date}"
+    )
+    bot.reply_to(message, text, parse_mode="HTML")
 
 @bot.message_handler(commands=['id'])
 def send_id_info(message):
-    text = ""
-    
-    # 1. Replying to a message logic
-    if message.reply_to_message:
-        # Agar reply kisi channel post par hai (Linked Group mein)
-        if message.reply_to_message.sender_chat:
-            target_chat = message.reply_to_message.sender_chat
-            title = html.escape(target_chat.title)
-            text = f"<b>Channel/Chat ID:</b> <code>{target_chat.id}</code>\n<b>Name:</b> {title}"
-        
-        # Agar reply kisi normal user par hai
-        else:
-            target_user = message.reply_to_message.from_user
-            mention = f'<a href="tg://user?id={target_user.id}">{html.escape(target_user.first_name)}</a>'
-            text = f"{mention}'s <b>User ID:</b> <code>{target_user.id}</code>"
-    
-    # 2. No reply (Command sender ki info)
-    else:
-        target_user = message.from_user
-        mention = f'<a href="tg://user?id={target_user.id}">{html.escape(target_user.first_name)}</a>'
-        text = f"{mention}'s <b>User ID:</b> <code>{target_user.id}</code>"
-
-    # 3. Hamesha Group ID add karein (agar group mein hai)
+    target_user = message.reply_to_message.from_user if message.reply_to_message else message.from_user
+    uid = target_user.id
+    mention = f'<a href="tg://user?id={uid}">{html.escape(target_user.first_name)}</a>'
+    text = f"{mention}'s ID: <code>{uid}</code>"
     if message.chat.type in ['group', 'supergroup']:
-        text += f"\n\n<b>Group ID:</b> <code>{message.chat.id}</code>"
-    
+        text += f"\nGroup ID: <code>{message.chat.id}</code>"
     bot.reply_to(message, text, parse_mode="HTML")
-    
+
 ### Bot by UNRATED CODER --- Support Our Channel @UNRATED_CODER ###
 ### --------> https://t.me/UNRATED_CODER <-------- ###

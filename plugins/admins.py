@@ -1,5 +1,6 @@
 # Please Support Us! @DogeshBhai_Pure_Bot on Telegram! 
 # This Bot Created By: @AniReal_Support!
+import os
 from bot_instance import bot
 import config, time
 import database as db
@@ -68,6 +69,13 @@ def unban_user_handler(message):
         bot.reply_to(message, f"✅ <b>User Unbanned:</b> <code>{uid}</code>")
     else:
         bot.reply_to(message, "❌ <b>User not found in ban list.</b>")
+
+@bot.message_handler(commands=['stop'])
+def shutdown_bot(message):
+    if str(message.from_user.id) != str(config.OWNER_ID): return
+    bot.reply_to(message, "🛑 <b>Bot is shutting down gracefully...</b>", parse_mode="HTML")
+    time.sleep(2)
+    os._exit(0)
 
 @bot.message_handler(commands=['del_admin'])
 def del_admin_handler(message):

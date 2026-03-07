@@ -85,7 +85,12 @@ if __name__ == "__main__":
                 allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member', 'chat_join_request']
             )
         except Exception as e:
-            logger.error(f"⚠️ Polling Error: {e}")
-            time.sleep(10) # Wait 10s on conflict/error
+            if "409" in str(e):
+                logger.error("🛑 409 CONFLICT: Another bot instance is running with this token!")
+                logger.warning("Please stop the other instance or change your API TOKEN.")
+                time.sleep(20) # Increase wait on conflict
+            else:
+                logger.error(f"⚠️ Polling Error: {e}")
+                time.sleep(10) # Wait 10s on other errors
 
 # Join & Support Us! @DogeshBhai_Pure_Bot!

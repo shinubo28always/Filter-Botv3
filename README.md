@@ -52,15 +52,17 @@ The bot requires the following environment variables:
 - `/about` - View details about the bot and developers.
 - `/request <anime_name>` - Submit a request for a missing anime.
 - `/id` - View your Telegram User ID (and Group ID if used in a group).
+- `/me` - View your bot profile (Rank, Joined date, etc.).
 
 ### Admin/Owner Commands
-- `/stats` - View bot statistics (Users, Filters, etc.).
+- `/stats` - View bot statistics (Users, Filters, Top Searches/Groups).
 - `/filters` - List all available filter keywords.
 - `/add_admin <user_id>` - Add a new admin (Owner only).
 - `/del_admin <user_id>` - Remove an admin (Owner only).
 - `/admins` - List all authorized bot admins.
 - `/ban <user_id>` - Ban a user from using the bot.
 - `/unban <user_id>` - Unban a user.
+- `/stop` - Gracefully shut down the bot (Owner only).
 - `/broadcast` - (Reply to msg) Broadcast message to all bot users.
 - `/gbroadcast` - (Reply to msg) Broadcast message to all groups where the bot is added.
 - `/add_fsub <channel_id>` - Add a channel to Force Subscription.
