@@ -35,6 +35,8 @@ def add_fsub_start(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_init|"))
 def save_new_fsub(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     bot.answer_callback_query(call.id, "Adding...")
     _, mode, cid, title = call.data.split("|")
     db.add_fsub_chnl(cid, title, mode)
@@ -75,6 +77,8 @@ def send_main_menu(chat_id, edit_mid=None):
 # --- 3. MANAGE CHANNEL ---
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_manage|"))
 def manage_channel_ui(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     bot.answer_callback_query(call.id)
     cid = call.data.split("|")[1]
     info = db.get_fsub_info(cid)
@@ -100,6 +104,8 @@ def manage_channel_ui(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_upd|"))
 def update_mode_callback(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     _, mode, cid = call.data.split("|")
     db.update_fsub_mode(cid, mode)
     
@@ -111,6 +117,8 @@ def update_mode_callback(call):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_auto|"))
 def toggle_auto_approve(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     cid = call.data.split("|")[1]
     info = db.get_fsub_info(cid)
     new_status = not info.get('auto_approve', False)
@@ -121,6 +129,8 @@ def toggle_auto_approve(call):
 
 @bot.callback_query_handler(func=lambda call: call.data == "fsub_back")
 def back_to_fsub_list(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     bot.answer_callback_query(call.id)
     send_main_menu(call.message.chat.id, edit_mid=call.message.message_id)
 
@@ -148,6 +158,8 @@ def del_fsub_handler(message):
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("fsub_del"))
 def delete_callbacks(call):
+    if not db.is_admin(call.from_user.id):
+        return bot.answer_callback_query(call.id, config.ROAST_GENERAL, show_alert=True)
     if call.data == "fsub_del_all":
         db.del_all_fsub_chnls()
         bot.answer_callback_query(call.id, "All Deleted")
