@@ -43,6 +43,8 @@ def search_handler(message):
     if len(query) == 1 and query.isalpha():
         wait_msg = bot.reply_to(message, f"🔍 <b>Searching for '{query.upper()}'...</b>")
         send_index_page(message.chat.id, query, 1, message.message_id, uid, edit_mid=wait_msg.message_id)
+        # We don't delete message here because send_index_page handles the result display,
+        # but the wait_msg/index_page will be deleted by delete_msg_timer in send_index_page
         return
 
     # 3. KEYWORD SCANNING (Slots)
@@ -56,7 +58,9 @@ def search_handler(message):
     matches = process.extract(query, all_kws, limit=10, scorer=fuzz.token_sort_ratio)
     best_matches = [m for m in matches if m[1] >= FUZZY_THRESHOLD]
     if not best_matches:
-        if message.chat.type == "private": bot.reply_to(message, "❌ <b>No results found!</b>")
+        if message.chat.type == "private":
+            no_res = bot.reply_to(message, "❌ <b>No results found!</b>")
+            delete_msg_timer(message.chat.id, [no_res.message_id, message.message_id], 300)
         return
 
     if best_matches[0][1] >= 95:
@@ -74,7 +78,7 @@ def search_handler(message):
                 if len(seen_titles) >= 5: break 
         if seen_titles:
             s_msg = bot.reply_to(message, "🧐 <b>Did you mean:</b>", reply_markup=markup)
-            delete_msg_timer(message.chat.id, [s_msg.message_id], 300)
+            delete_msg_timer(message.chat.id, [s_msg.message_id, message.message_id], 300)
 
 def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
     # Fetch from fixed database logic
@@ -108,7 +112,10 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
     markup.row(*nav)
 
     text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_items)}</code>"
-    try: bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
+    try:
+        bot.edit_message_text(text, chat_id, edit_mid, reply_markup=markup)
+        # Auto-delete Index page and user message after 5 mins
+        delete_msg_timer(chat_id, [edit_mid, original_mid], 300)
     except: pass
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith(('ind', 'res')))
@@ -151,7 +158,7 @@ def handle_callbacks(call):
 
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
-    del_time = 120 if is_slot else 300 
+    del_time = 300 # All results delete after 5 min
     try:
         markup = types.InlineKeyboardMarkup()
         if is_slot:
@@ -159,9 +166,13 @@ def send_final_result(message, data, r_mid):
             for btn in data.get('custom_buttons', []): markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
             res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup if data.get('custom_buttons') else None, reply_to_message_id=r_mid)
         else:
-            invite = bot.create_chat_invite_link(int(data['source_cid']), member_limit=0)
+            # Manual Filter: Invite link expires in 5 min
+            # Note: expire_date must be an integer unix timestamp
+            expire_time = int(time.time() + 300)
+            invite = bot.create_chat_invite_link(int(data['source_cid']), expire_date=expire_time, member_limit=1)
             markup.add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
             res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
+
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
