@@ -1,6 +1,6 @@
 ### This bot is Created By UNRATED CODER --- Please Join & Support @UNRATED_CODER ###
 from pymongo import MongoClient
-import config, sys
+import config, sys, time
 
 DB_NAME = "AniReal_Filter_Bot"
 try:
@@ -10,10 +10,11 @@ try:
 except Exception as e:
     print(f"❌ MongoDB Error: {e}"); sys.exit(1)
 
-users, groups, filters, admins, fsub_col = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels']
+users, groups, filters, admins, fsub_col, req_col, settings = db['users'], db['groups'], db['filters'], db['admins'], db['fsub_channels'], db['requests'], db['settings']
 
 def add_user(uid): users.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 def get_all_users(): return [u['_id'] for u in users.find()]
+def del_user(uid): return users.delete_one({"_id": str(uid)}).deleted_count
 def is_admin(uid): return str(uid) == str(config.OWNER_ID) or admins.find_one({"_id": str(uid)}) is not None
 def add_admin(uid): admins.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 def del_admin(uid): return admins.delete_one({"_id": str(uid)}).deleted_count
@@ -43,7 +44,27 @@ def delete_filter(keyword): return filters.delete_one({"keyword": keyword.lower(
 def delete_all_filters(): return filters.delete_many({}).deleted_count
 def add_fsub_chnl(chat_id, title, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"title": title, "mode": mode}}, upsert=True)
 def get_all_fsub(): return list(fsub_col.find())
+def get_fsub_info(chat_id): return fsub_col.find_one({"_id": str(chat_id)})
+def update_fsub_mode(chat_id, mode): fsub_col.update_one({"_id": str(chat_id)}, {"$set": {"mode": mode}})
 def del_fsub_chnl(chat_id): return fsub_col.delete_one({"_id": str(chat_id)}).deleted_count
-def present_user(uid):
-    return users.find_one({"_id": str(uid)}) is not None
-    def present_group(chat_id): return groups.find_one({"_id": str(chat_id)}) is not None
+def del_all_fsub_chnls(): return fsub_col.delete_many({}).deleted_count
+
+def present_user(uid): return users.find_one({"_id": str(uid)}) is not None
+def present_group(chat_id): return groups.find_one({"_id": str(chat_id)}) is not None
+
+def save_request(uid, first_name, query):
+    req_col.insert_one({
+        "uid": str(uid),
+        "first_name": first_name,
+        "query": query,
+        "time": time.time()
+    })
+
+def get_pending_requests(): return list(req_col.find().sort("time", -1))
+def delete_request(uid, query): return req_col.delete_one({"uid": str(uid), "query": query}).deleted_count
+def delete_all_requests(): return req_col.delete_many({}).deleted_count
+
+def set_maintenance(status): settings.update_one({"_id": "maintenance"}, {"$set": {"status": bool(status)}}, upsert=True)
+def get_maintenance():
+    data = settings.find_one({"_id": "maintenance"})
+    return data['status'] if data else False

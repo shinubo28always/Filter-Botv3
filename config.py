@@ -5,7 +5,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-def get_config(key, default=None):
+def get_config(key, default=None, required=False):
     # Priority: 1. Hardcoded, 2. .env, 3. Host Env
     hardcoded = {
         "API_TOKEN": "", 
@@ -15,13 +15,16 @@ def get_config(key, default=None):
         "LOG_CHANNEL_ID": ""
     }
     val = hardcoded.get(key) or os.getenv(key)
+    if required and not val:
+        raise ValueError(f"CRITICAL ERROR: Configuration '{key}' is missing! Please set it in .env or hardcode it.")
     return val if val else default
 
-API_TOKEN = get_config("API_TOKEN")
-OWNER_ID = int(get_config("OWNER_ID")) if get_config("OWNER_ID") else 0
-MONGO_URI = get_config("MONGO_URI")
-DB_CHANNEL_ID = int(get_config("DB_CHANNEL_ID")) if get_config("DB_CHANNEL_ID") else 0
-LOG_CHANNEL_ID = int(get_config("LOG_CHANNEL_ID")) if get_config("LOG_CHANNEL_ID") else 0
+# Mandatory Configs
+API_TOKEN = get_config("API_TOKEN", required=True)
+OWNER_ID = int(get_config("OWNER_ID", required=True))
+MONGO_URI = get_config("MONGO_URI", required=True)
+DB_CHANNEL_ID = int(get_config("DB_CHANNEL_ID", required=True))
+LOG_CHANNEL_ID = int(get_config("LOG_CHANNEL_ID", required=True))
 
 # Static Assets
 STICKER_ID = "CAACAgUAAxkBAAEP4flpKC6Ozwtd25givMwrN3zMcnLeFQACuBYAArKmaFa__rW3azdtFjYE"

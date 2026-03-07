@@ -4,7 +4,16 @@ import os
 import sys
 import threading
 import time
+import logging
 from flask import Flask
+
+# Logging Setup
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)]
+)
+logger = logging.getLogger("AnimeBot")
 
 # Path fix
 sys.path.append(os.getcwd())
@@ -26,7 +35,14 @@ import plugins.slots
 
 app = Flask(__name__)
 @app.route('/')
-def health(): return "Bot is Alive!", 200
+def health():
+    # Optional: Check DB connectivity here
+    try:
+        from database import db
+        db.command('ping')
+        return "Bot is Alive & DB is Connected!", 200
+    except Exception as e:
+        return f"Bot is Alive but DB Error: {e}", 500
 
 def run_flask():
     port = int(os.environ.get("PORT", 10000))
@@ -37,15 +53,16 @@ if __name__ == "__main__":
     threading.Thread(target=run_flask, daemon=True).start()
     
     # 2. FORCE CLEANUP
-    print("🔄 Clearing sessions and pending updates...")
+    logger.info("🔄 Clearing sessions and pending updates...")
     try:
         bot.remove_webhook()
         # Drop_pending_updates=True purane saare atke hue messages clear kar dega
         bot.delete_webhook(drop_pending_updates=True) 
         time.sleep(3) # Wait for Telegram to reset
-    except: pass
+    except Exception as e:
+        logger.warning(f"Webhook cleanup warning: {e}")
     
-    print(f"🚀 Bot Started | Owner: {config.OWNER_ID}")
+    logger.info(f"🚀 Bot Started | Owner: {config.OWNER_ID}")
     try:
         send_log("<blockquote><b>Bᴏᴛ Sᴛᴀʀᴛᴇᴅ Bʏ: @UNRATED_CODER</b></blockquote>")
     except: pass
@@ -53,13 +70,14 @@ if __name__ == "__main__":
     # 3. POLLING WITH BROAD PERMISSIONS
     while True:
         try:
+            logger.info("📡 Bot is now polling...")
             bot.infinity_polling(
                 timeout=60, 
                 skip_pending=True,
                 allowed_updates=['message', 'callback_query', 'chat_member', 'my_chat_member', 'chat_join_request']
             )
         except Exception as e:
-            print(f"⚠️ Polling Error: {e}")
-            time.sleep(10) # Conflict hone par 10s wait
+            logger.error(f"⚠️ Polling Error: {e}")
+            time.sleep(10) # Wait 10s on conflict/error
 
 # Join & Support Us! @DogeshBhai_Pure_Bot!

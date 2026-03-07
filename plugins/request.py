@@ -88,6 +88,74 @@ def process_request_text_from_flow(message):
 def process_request_text(message, query):
     send_request_to_admin(message, query)
 
+# --- ADMIN REQUEST MANAGEMENT ---
+
+@bot.message_handler(commands=['requests'])
+def list_requests_handler(message):
+    if not db.is_admin(message.from_user.id): return
+
+    reqs = db.get_pending_requests()
+    if not reqs:
+        return bot.reply_to(message, "📂 <b>No pending requests!</b>", parse_mode="HTML")
+
+    send_requests_page(message.chat.id, reqs, 1)
+
+def send_requests_page(chat_id, reqs, page, edit_mid=None):
+    PER_PAGE = 5
+    total_pages = (len(reqs) + PER_PAGE - 1) // PER_PAGE
+    start = (page - 1) * PER_PAGE
+    page_reqs = reqs[start:start + PER_PAGE]
+
+    txt = f"📝 <b>Pending Requests (Page {page}/{total_pages}):</b>\n\n"
+    markup = types.InlineKeyboardMarkup()
+
+    for r in page_reqs:
+        q = html.escape(r['query'])
+        txt += f"• <b>{q}</b> (From: {html.escape(r['first_name'])})\n"
+        markup.add(
+            types.InlineKeyboardButton(f"✅ Done: {q[:15]}...", callback_data=f"req_done|{r['uid']}|{r['query'][:20]}")
+        )
+
+    nav = []
+    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"req_page|{page-1}"))
+    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"req_page|{page+1}"))
+    if nav: markup.row(*nav)
+
+    if edit_mid:
+        try: bot.edit_message_text(txt, chat_id, edit_mid, reply_markup=markup, parse_mode="HTML")
+        except: pass
+    else:
+        bot.send_message(chat_id, txt, reply_markup=markup, parse_mode="HTML")
+
+@bot.callback_query_handler(func=lambda call: call.data.startswith(("req_page|", "req_done|")))
+def handle_request_management_callbacks(call):
+    if not db.is_admin(call.from_user.id): return
+
+    data = call.data.split("|")
+    if data[0] == "req_page":
+        reqs = db.get_pending_requests()
+        send_requests_page(call.message.chat.id, reqs, int(data[1]), edit_mid=call.message.message_id)
+
+    elif data[0] == "req_done":
+        # Note: We need the full query for deletion, but callback data is limited in size.
+        # For simplicity in this demo, we'll try to find and delete.
+        # In a real app, you'd use a unique Request ID.
+        uid = data[1]
+        short_q = data[2]
+        # Fetch all, find matching short query
+        reqs = db.get_pending_requests()
+        for r in reqs:
+            if r['uid'] == uid and r['query'].startswith(short_q):
+                db.delete_request(uid, r['query'])
+                break
+
+        bot.answer_callback_query(call.id, "✅ Marked as Done!")
+        reqs = db.get_pending_requests()
+        if reqs:
+            send_requests_page(call.message.chat.id, reqs, 1, edit_mid=call.message.message_id)
+        else:
+            bot.edit_message_text("📂 <b>No pending requests!</b>", call.message.chat.id, call.message.message_id, parse_mode="HTML")
+
 # --- ADMIN REPLY LOGIC ---
 
 @bot.callback_query_handler(func=lambda call: call.data.startswith("adm_rep|"))
