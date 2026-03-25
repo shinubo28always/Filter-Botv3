@@ -6,6 +6,7 @@
 
 import requests
 import config
+import database as db
 from bot_instance import bot
 
 def search_anilist(name):
@@ -67,16 +68,31 @@ def get_anime_details(anilist_id):
         # Prefer bannerImage (landscape/wide) over coverImage (portrait)
         poster = d.get('bannerImage') or d['coverImage']['extraLarge']
         
-        caption = (
-            f"<b>🔰 {title} </b>\n"
-            f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
-            f"‣ Episodes: {episodes}\n"
-            f"‣ Season: {season}\n"
-            f"‣ Quality: Multiple\n"
-            f"‣ Audio: हिंदी (Hindi) #Official\n"
-            f"‣ Genres: {genres}\n"
-            f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
-        )
+        settings = db.get_bot_settings()
+        theme = settings.get('theme', 'default')
+
+        if theme == 'stylish':
+            caption = (
+                f"🌟 <b>{title.upper()}</b> 🌟\n\n"
+                f"✨ <i>Episodes: {episodes}</i>\n"
+                f"📅 <i>Season: {season.capitalize()}</i>\n"
+                f"💠 <i>Quality: Full HD</i>\n"
+                f"🎙 <i>Audio: Hindi Dubbed</i>\n"
+                f"🏷 <i>Genres: {genres}</i>\n\n"
+                f"━━━━━━━━━━━━━━━━━━━━━"
+            )
+        else: # Default theme
+            caption = (
+                f"<b>🔰 {title} </b>\n"
+                f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
+                f"‣ Episodes: {episodes}\n"
+                f"‣ Season: {season}\n"
+                f"‣ Quality: Multiple\n"
+                f"‣ Audio: हिंदी (Hindi) #Official\n"
+                f"‣ Genres: {genres}\n"
+                f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
+            )
+
         return {"title": title, "poster": poster, "caption": caption}
     except:
         return None

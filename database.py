@@ -80,6 +80,26 @@ def get_maintenance():
     data = settings.find_one({"_id": "maintenance"})
     return data['status'] if data else False
 
+def get_bot_settings():
+    default = {
+        "private_expiry": 120,
+        "public_expiry": 300,
+        "auto_delete": 300,
+        "button_text": "Watch & Download",
+        "theme": "default"
+    }
+    data = settings.find_one({"_id": "bot_settings"})
+    if not data:
+        return default
+    # Ensure all keys exist
+    for k, v in default.items():
+        if k not in data:
+            data[k] = v
+    return data
+
+def update_bot_setting(key, value):
+    settings.update_one({"_id": "bot_settings"}, {"$set": {key: value}}, upsert=True)
+
 def ban_user(uid): banned_col.update_one({"_id": str(uid)}, {"$set": {"_id": str(uid)}}, upsert=True)
 def unban_user(uid): return banned_col.delete_one({"_id": str(uid)}).deleted_count
 def is_banned(uid): return banned_col.find_one({"_id": str(uid)}) is not None

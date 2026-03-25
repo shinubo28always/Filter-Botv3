@@ -33,6 +33,7 @@ import plugins.request
 import plugins.search
 import plugins.setup
 import plugins.slots
+import plugins.settings
 
 app = Flask(__name__)
 @app.route('/')
