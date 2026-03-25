@@ -24,9 +24,8 @@ def delete_msg_timer(chat_id, message_ids, delay):
             except: pass
     threading.Thread(target=delayed_delete).start()
 
-@bot.message_handler(func=lambda m: True, content_types=['text'])
+@bot.message_handler(func=lambda m: not m.text.startswith("/"), content_types=['text'])
 def search_handler(message):
-    if message.text.startswith("/"): return
     uid = message.from_user.id
 
     # 0. BAN CHECK
