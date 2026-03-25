@@ -211,7 +211,8 @@ def handle_callbacks(call):
 
 def send_final_result(message, data, r_mid):
     is_slot = data.get('type') == 'slot'
-    del_time = 300 # All results delete after 5 min
+    settings = db.get_bot_settings()
+    del_time = settings.get('auto_delete', 300)
     try:
         markup = types.InlineKeyboardMarkup()
         if is_slot:
@@ -219,11 +220,21 @@ def send_final_result(message, data, r_mid):
             for btn in data.get('custom_buttons', []): markup.add(types.InlineKeyboardButton(btn['name'], url=btn['url']))
             res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup if data.get('custom_buttons') else None, reply_to_message_id=r_mid)
         else:
-            # Manual Filter: Invite link expires in 5 min
-            # Note: expire_date must be an integer unix timestamp
-            expire_time = int(time.time() + 300)
+            # Manual Filter: Dynamic Expiry and Button Text
+            try:
+                chat_info = bot.get_chat(int(data['source_cid']))
+                if chat_info.username: # Public Channel
+                    expire_sec = settings.get('public_expiry', 300)
+                else: # Private Channel
+                    expire_sec = settings.get('private_expiry', 120)
+            except:
+                expire_sec = 300 # Fallback
+
+            expire_time = int(time.time() + expire_sec)
             invite = bot.create_chat_invite_link(int(data['source_cid']), expire_date=expire_time, member_limit=1)
-            markup.add(types.InlineKeyboardButton("🎬 Watch / Download", url=invite.invite_link))
+
+            btn_text = settings.get('button_text', "Watch & Download")
+            markup.add(types.InlineKeyboardButton(f"🎬 {btn_text}", url=invite.invite_link))
             res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
 
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
