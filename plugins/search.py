@@ -260,4 +260,10 @@ def send_fsub_message(message, missing):
             markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link, style='success'))
 
     markup.add(types.InlineKeyboardButton("• Try Again •", callback_data="check_fsub", style='primary'))
+            markup.add(types.InlineKeyboardButton("✨ Request to Join ✨", url=invite.invite_link))
+        else:
+            invite = bot.create_chat_invite_link(cid)
+            markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
+
+    markup.add(types.InlineKeyboardButton("• Try Again •", callback_data="check_fsub"))
     bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\nJoin our official channels to view results.", reply_markup=markup, parse_mode="HTML")
