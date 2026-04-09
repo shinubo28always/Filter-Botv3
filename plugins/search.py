@@ -26,7 +26,7 @@ def delete_msg_timer(chat_id, message_ids, delay):
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
-    if message.text.startswith("/"): return
+    if message.text.startswith("/") or message.chat.type == 'channel': return
     uid = message.from_user.id
 
     # 0. BAN CHECK
@@ -157,11 +157,12 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
         cb = f"res|{item['db_mid']}|{uid}|{original_mid}"
         markup.add(types.InlineKeyboardButton(f"🎬 {item['title']}", callback_data=cb, style='primary'))
 
-    nav = []
-    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}", style='success'))
-    nav.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none"))
-    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}", style='success'))
-    markup.row(*nav)
+    if total_pages > 1:
+        nav = []
+        if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}", style='success'))
+        nav.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none", style='primary'))
+        if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}", style='success'))
+        markup.row(*nav)
 
     text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_items)}</code>"
     try:
@@ -250,20 +251,22 @@ def send_final_result(message, data, r_mid):
 
 def send_fsub_message(message, missing):
     markup = types.InlineKeyboardMarkup()
+    
     for f in missing:
         cid = int(f['_id'])
         if f.get('mode') == 'request':
             invite = bot.create_chat_invite_link(cid, creates_join_request=True)
-            markup.add(types.InlineKeyboardButton("✨ Request to Join ✨", url=invite.invite_link, style='primary'))
-        else:
-            invite = bot.create_chat_invite_link(cid)
-            markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link, style='success'))
-
-    markup.add(types.InlineKeyboardButton("• Try Again •", callback_data="check_fsub", style='primary'))
             markup.add(types.InlineKeyboardButton("✨ Request to Join ✨", url=invite.invite_link))
         else:
             invite = bot.create_chat_invite_link(cid)
             markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link))
 
+    # Try Again button ko loop ke bahar rakha hai taaki ye sirf ek baar aaye
     markup.add(types.InlineKeyboardButton("• Try Again •", callback_data="check_fsub"))
-    bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\nJoin our official channels to view results.", reply_markup=markup, parse_mode="HTML")
+    
+    bot.reply_to(
+        message, 
+        "<b>⚠️ Access Restricted!</b>\nJoin our official channels to view results.", 
+        reply_markup=markup, 
+        parse_mode="HTML"
+    )
