@@ -26,7 +26,7 @@ def delete_msg_timer(chat_id, message_ids, delay):
 
 @bot.message_handler(func=lambda m: True, content_types=['text'])
 def search_handler(message):
-    if message.text.startswith("/"): return
+    if message.text.startswith("/") or message.chat.type == 'channel': return
     uid = message.from_user.id
 
     # 0. BAN CHECK
@@ -157,11 +157,12 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
         cb = f"res|{item['db_mid']}|{uid}|{original_mid}"
         markup.add(types.InlineKeyboardButton(f"🎬 {item['title']}", callback_data=cb, style='primary'))
 
-    nav = []
-    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}", style='success'))
-    nav.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none"))
-    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}", style='success'))
-    markup.row(*nav)
+    if total_pages > 1:
+        nav = []
+        if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}", style='success'))
+        nav.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none", style='primary'))
+        if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}", style='success'))
+        markup.row(*nav)
 
     text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_items)}</code>"
     try:

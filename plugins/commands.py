@@ -60,12 +60,12 @@ def start_handler(message):
     if message.chat.type == "private":
         pm_text = config.PM_START_MSG.format(first_name=first_name)
         markup = types.InlineKeyboardMarkup()
-        markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
+        markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL, style='success'))
         markup.row(
             types.InlineKeyboardButton("📖 Help", callback_data="start_help", style='primary'),
             types.InlineKeyboardButton("ℹ️ About", callback_data="start_about", style='primary')
         )
-        markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
+        markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true", style='success'))
 
         try:
             bot.send_photo(chat_id, config.START_IMG, caption=pm_text, reply_markup=markup, parse_mode='HTML', message_effect_id=config.EFFECT_FIRE)
@@ -74,7 +74,7 @@ def start_handler(message):
     else:
         group_text = config.GROUP_START_MSG.format(group_name=group_name)
         markup = types.InlineKeyboardMarkup().add(
-            types.InlineKeyboardButton("🤖 PM Me", url=f"https://t.me/{bot.get_me().username}?start=help")
+            types.InlineKeyboardButton("🤖 PM Me", url=f"https://t.me/{bot.get_me().username}?start=help", style='success')
         )
         try:
             bot.reply_to(message, group_text, reply_markup=markup, parse_mode='HTML')
@@ -127,12 +127,12 @@ def start_callback(call):
         first_name = html.escape(call.from_user.first_name)
         pm_text = config.PM_START_MSG.format(first_name=first_name)
         markup = types.InlineKeyboardMarkup()
-        markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
+        markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL, style='success'))
         markup.row(
             types.InlineKeyboardButton("📖 Help", callback_data="start_help", style='primary'),
             types.InlineKeyboardButton("ℹ️ About", callback_data="start_about", style='primary')
         )
-        markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
+        markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true", style='success'))
         
         try:
             bot.edit_message_caption(pm_text, chat_id, msg_id, reply_markup=markup, parse_mode='HTML')

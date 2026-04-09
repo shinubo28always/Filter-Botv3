@@ -72,10 +72,10 @@ def unban_user_handler(message):
     else:
         bot.reply_to(message, "❌ <b>User not found in ban list.</b>")
 
-@bot.message_handler(commands=['stop'])
-def shutdown_bot(message):
+@bot.message_handler(commands=['restart'])
+def restart_bot(message):
     if str(message.from_user.id) != str(config.OWNER_ID): return
-    bot.reply_to(message, "🛑 <b>Bot is shutting down gracefully...</b>", parse_mode="HTML")
+    bot.reply_to(message, "🔄 <b>Bot is restarting...</b>", parse_mode="HTML")
     time.sleep(2)
     os._exit(0)
 
