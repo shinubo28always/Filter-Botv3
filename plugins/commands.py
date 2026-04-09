@@ -18,14 +18,14 @@ from telebot import types
 def help_command(message):
     text = config.HELP_MSG
     markup = types.InlineKeyboardMarkup()
-    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger'))
     bot.reply_to(message, text, reply_markup=markup, parse_mode='HTML')
 
 @bot.message_handler(commands=['about'])
 def about_command(message):
     text = config.ABOUT_MSG
     markup = types.InlineKeyboardMarkup()
-    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    markup.row(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger'))
     bot.reply_to(message, text, reply_markup=markup, parse_mode='HTML')
 
 # ================= START COMMAND LOGIC ==================
@@ -62,8 +62,8 @@ def start_handler(message):
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
         markup.row(
-            types.InlineKeyboardButton("📖 Help", callback_data="start_help"),
-            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about")
+            types.InlineKeyboardButton("📖 Help", callback_data="start_help", style='primary'),
+            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about", style='primary')
         )
         markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
 
@@ -100,8 +100,8 @@ def start_callback(call):
         text = config.HELP_MSG
         markup = types.InlineKeyboardMarkup()
         markup.row(
-            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back"),
-            types.InlineKeyboardButton("🗑️ Close", callback_data="start_close")
+            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back", style='success'),
+            types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger')
         )
         # Edit Image Caption (if photo exists) or Text
         try:
@@ -114,8 +114,8 @@ def start_callback(call):
         text = config.ABOUT_MSG
         markup = types.InlineKeyboardMarkup()
         markup.row(
-            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back"),
-            types.InlineKeyboardButton("🗑️ Close", callback_data="start_close")
+            types.InlineKeyboardButton("⬅️ Back", callback_data="start_back", style='success'),
+            types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger')
         )
         try:
             bot.edit_message_caption(text, chat_id, msg_id, reply_markup=markup, parse_mode='HTML')
@@ -129,8 +129,8 @@ def start_callback(call):
         markup = types.InlineKeyboardMarkup()
         markup.row(types.InlineKeyboardButton("✨ Join Updates ✨", url=config.LINK_ANIME_CHANNEL))
         markup.row(
-            types.InlineKeyboardButton("📖 Help", callback_data="start_help"),
-            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about")
+            types.InlineKeyboardButton("📖 Help", callback_data="start_help", style='primary'),
+            types.InlineKeyboardButton("ℹ️ About", callback_data="start_about", style='primary')
         )
         markup.row(types.InlineKeyboardButton("➕ Add Bot to Group ➕", url=f"https://t.me/{bot.get_me().username}?startgroup=true"))
         
@@ -183,10 +183,10 @@ def topsearch_cmd(message):
     markup = types.InlineKeyboardMarkup()
     if is_admin:
         markup.row(
-            types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh"),
-            types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset")
+            types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh", style='success'),
+            types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset", style='danger')
         )
-    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger'))
     bot.reply_to(message, res, reply_markup=markup, parse_mode='HTML')
 
 @bot.callback_query_handler(func=lambda call: call.data in ["top_refresh", "top_reset"])
@@ -215,10 +215,10 @@ def topsearch_callback(call):
 
     markup = types.InlineKeyboardMarkup()
     markup.row(
-        types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh"),
-        types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset")
+        types.InlineKeyboardButton("🔄 Refresh", callback_data="top_refresh", style='success'),
+        types.InlineKeyboardButton("🗑️ Reset", callback_data="top_reset", style='danger')
     )
-    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close"))
+    markup.add(types.InlineKeyboardButton("🗑️ Close", callback_data="start_close", style='danger'))
 
     try:
         bot.edit_message_text(res, call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode='HTML')
@@ -254,8 +254,8 @@ def delete_filter_cmd(message):
     target = parts[1].lower().strip()
     if target == "all":
         markup = types.InlineKeyboardMarkup().add(
-            types.InlineKeyboardButton("✅ Confirm All", callback_data="hard_del_all_filters"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="start_close")
+            types.InlineKeyboardButton("✅ Confirm All", callback_data="hard_del_all_filters", style='danger'),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="start_close", style='success')
         )
         return bot.reply_to(message, "⚠️ <b>Warning!</b>\nDelete all filters?", reply_markup=markup)
     if db.delete_filter(target):

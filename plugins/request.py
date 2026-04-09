@@ -20,7 +20,7 @@ def send_request_to_admin(message, query):
 
     # 2. Admin notification logic
     markup = types.InlineKeyboardMarkup().add(
-        types.InlineKeyboardButton("💬 Reply User", callback_data=f"adm_rep|{uid}|{message.message_id}")
+        types.InlineKeyboardButton("💬 Reply User", callback_data=f"adm_rep|{uid}|{message.message_id}", style='success')
     )
     
     # html.escape zaroori hai taaki user ka naam ya query HTML break na kare
@@ -48,7 +48,7 @@ def request_command(message):
     if message.chat.type != "private":
         markup = types.InlineKeyboardMarkup()
         bot_username = bot.get_me().username
-        markup.add(types.InlineKeyboardButton("📩 Cʟɪᴄᴋ ᴛᴏ Sᴇɴᴅ Rᴇǫᴜᴇsᴛ", url=f"https://t.me/{bot_username}?start=request"))
+        markup.add(types.InlineKeyboardButton("📩 Cʟɪᴄᴋ ᴛᴏ Sᴇɴᴅ Rᴇǫᴜᴇsᴛ", url=f"https://t.me/{bot_username}?start=request", style='primary'))
         
         return bot.reply_to(
             message, 
@@ -114,12 +114,12 @@ def send_requests_page(chat_id, reqs, page, edit_mid=None):
         q = html.escape(r['query'])
         txt += f"• <b>{q}</b> (From: {html.escape(r['first_name'])})\n"
         markup.add(
-            types.InlineKeyboardButton(f"✅ Done: {q[:15]}...", callback_data=f"req_done|{r['uid']}|{r['query'][:20]}")
+            types.InlineKeyboardButton(f"✅ Done: {q[:15]}...", callback_data=f"req_done|{r['uid']}|{r['query'][:20]}", style='success')
         )
 
     nav = []
-    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"req_page|{page-1}"))
-    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"req_page|{page+1}"))
+    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"req_page|{page-1}", style='success'))
+    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"req_page|{page+1}", style='success'))
     if nav: markup.row(*nav)
 
     if edit_mid:
