@@ -73,24 +73,25 @@ def get_anime_details(anilist_id):
 
         if theme == 'stylish':
             caption = (
-                f"🌟 <b>{title.upper()}</b> 🌟\n\n"
-                f"✨ <i>Episodes: {episodes}</i>\n"
-                f"📅 <i>Season: {season.capitalize()}</i>\n"
-                f"💠 <i>Quality: Full HD</i>\n"
-                f"🎙 <i>Audio: Hindi Dubbed</i>\n"
-                f"🏷 <i>Genres: {genres}</i>\n\n"
-                f"━━━━━━━━━━━━━━━━━━━━━"
+                f"<b>❖ {title} ✅</b>\n"
+                f"<blockquote><b>╭━━━━━━━━━━━━━━━━━━━━━━⪼\n"
+                f"┣⌯✧ Season: {season.capitalize()}\n"
+                f"┣⌯✧ Episodes: {episodes}\n"
+                f"┣⌯✧ Quality: 480p, 720p, 1080p\n"
+                f"┣⌯✧ Language: Hindi | #Official\n"
+                f"┣⌯✧ Ganres: {genres}\n"
+                f"╰━━━━━━━━━━━━━━━━━━━━━━⪼</b></blockquote>\n"
             )
         else: # Default theme
             caption = (
-                f"<b>🔰 {title} </b>\n"
-                f"<blockquote><b>━━━━━━━━━━━━━━━━━━━━━━━━\n"
-                f"‣ Episodes: {episodes}\n"
-                f"‣ Season: {season}\n"
-                f"‣ Quality: Multiple\n"
-                f"‣ Audio: हिंदी (Hindi) #Official\n"
-                f"‣ Genres: {genres}\n"
-                f"━━━━━━━━━━━━━━━━━━━━━━━━</b></blockquote>"
+                f"<b>❖ {title} ✅</b>\n"
+                f"<blockquote><b>╭━━━━━━━━━━━━━━━━━━━━━━⪼\n"
+                f"┣⌯✧ Season: {season.capitalize()}\n"
+                f"┣⌯✧ Episodes: {episodes}\n"
+                f"┣⌯✧ Quality: 480p, 720p, 1080p\n"
+                f"┣⌯✧ Language: Hindi | #Official\n"
+                f"┣⌯✧ Ganres: {genres}\n"
+                f"╰━━━━━━━━━━━━━━━━━━━━━━⪼</b></blockquote>\n"
             )
 
         return {"title": title, "poster": poster, "caption": caption}
