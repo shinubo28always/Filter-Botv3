@@ -38,8 +38,8 @@ def handle_member_status_change(message):
     cid = message.chat.id
     status = message.new_chat_member.status
 
-    if status in ['member', 'administrator', 'creator', 'left', 'kicked']:
-        # If they are now a member or left, they no longer have a "pending" join request
+    if status in ['member', 'administrator', 'creator', 'restricted', 'left', 'kicked']:
+        # If they are now a member, restricted, or left, they no longer have a "pending" join request
         db.del_pending_request(uid, cid)
 
 @bot.my_chat_member_handler()
