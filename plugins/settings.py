@@ -6,15 +6,15 @@ import config
 def get_settings_markup():
     s = db.get_bot_settings()
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton(f"Private Expiry: {s['private_expiry']}s", callback_data="set_val|private_expiry"))
-    markup.add(types.InlineKeyboardButton(f"Public Expiry: {s['public_expiry']}s", callback_data="set_val|public_expiry"))
-    markup.add(types.InlineKeyboardButton(f"Auto Delete: {s['auto_delete']}s", callback_data="set_val|auto_delete"))
-    markup.add(types.InlineKeyboardButton(f"Button: {s['button_text']}", callback_data="set_val|button_text"))
+    markup.add(types.InlineKeyboardButton(f"Private Expiry: {s['private_expiry']}s", callback_data="set_val|private_expiry", style='primary'))
+    markup.add(types.InlineKeyboardButton(f"Public Expiry: {s['public_expiry']}s", callback_data="set_val|public_expiry", style='primary'))
+    markup.add(types.InlineKeyboardButton(f"Auto Delete: {s['auto_delete']}s", callback_data="set_val|auto_delete", style='primary'))
+    markup.add(types.InlineKeyboardButton(f"Button: {s['button_text']}", callback_data="set_val|button_text", style='primary'))
 
     theme_display = s['theme'].capitalize()
-    markup.add(types.InlineKeyboardButton(f"Theme: {theme_display}", callback_data="set_theme_menu"))
+    markup.add(types.InlineKeyboardButton(f"Theme: {theme_display}", callback_data="set_theme_menu", style='primary'))
 
-    markup.add(types.InlineKeyboardButton("Close", callback_data="close_settings"))
+    markup.add(types.InlineKeyboardButton("Close", callback_data="close_settings", style='danger'))
     return markup
 
 @bot.message_handler(commands=['settings'])
@@ -69,9 +69,9 @@ def theme_menu(call):
         return bot.answer_callback_query(call.id, "❌ Not for you!")
 
     markup = types.InlineKeyboardMarkup()
-    markup.add(types.InlineKeyboardButton("Default Style", callback_data="update_theme|default"))
-    markup.add(types.InlineKeyboardButton("Stylish Bold", callback_data="update_theme|stylish"))
-    markup.add(types.InlineKeyboardButton("Back", callback_data="back_to_settings"))
+    markup.add(types.InlineKeyboardButton("Default Style", callback_data="update_theme|default", style='primary'))
+    markup.add(types.InlineKeyboardButton("Stylish Bold", callback_data="update_theme|stylish", style='primary'))
+    markup.add(types.InlineKeyboardButton("Back", callback_data="back_to_settings", style='success'))
 
     bot.edit_message_text("🎨 <b>Select Anime Result Theme:</b>\n\nChoose the visual style for new filters:", call.message.chat.id, call.message.message_id, reply_markup=markup, parse_mode="HTML")
 

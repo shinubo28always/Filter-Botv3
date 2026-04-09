@@ -55,11 +55,9 @@ def search_handler(message):
         missing = []
         for f in all_fsubs:
             try:
-                # Normal check
                 st = bot.get_chat_member(int(f['_id']), uid).status
-                if st in ['member', 'administrator', 'creator']: continue
+                if st in ['member', 'administrator', 'creator', 'restricted']: continue
 
-                # If not a member, check if they have a PENDING Join Request (only for Request Mode channels)
                 if f.get("mode") == "request" and db.is_request_pending(uid, f['_id']):
                     continue
 
@@ -68,7 +66,7 @@ def search_handler(message):
                 missing.append(f)
 
         if missing:
-            return send_fsub_message(message, missing, [f for f in all_fsubs if f.get("mode") == "request"])
+            return send_fsub_message(message, missing)
 
     # 2. ALPHABET INDEX (NOW FIXED)
     if len(query) == 1 and query.isalpha():
@@ -129,6 +127,8 @@ def search_handler(message):
                 seen_titles.add(row['title'])
                 if len(seen_titles) >= 5: break 
         if seen_titles:
+            for row in markup.keyboard:
+                for btn in row: btn.style = 'primary'
             s_msg = bot.reply_to(message, "🧐 <b>Did you mean:</b>", reply_markup=markup)
             delete_msg_timer(message.chat.id, [s_msg.message_id, message.message_id], 300)
 
@@ -155,12 +155,12 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
     for item in page_items:
         # Direct Callback to avoid extra DB hits
         cb = f"res|{item['db_mid']}|{uid}|{original_mid}"
-        markup.add(types.InlineKeyboardButton(f"🎬 {item['title']}", callback_data=cb))
+        markup.add(types.InlineKeyboardButton(f"🎬 {item['title']}", callback_data=cb, style='primary'))
 
     nav = []
-    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}"))
+    if page > 1: nav.append(types.InlineKeyboardButton("⬅️ Back", callback_data=f"ind|{letter}|{page-1}|{uid}|{original_mid}", style='success'))
     nav.append(types.InlineKeyboardButton(f"{page}/{total_pages}", callback_data="none"))
-    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}"))
+    if page < total_pages: nav.append(types.InlineKeyboardButton("Next ➡️", callback_data=f"ind|{letter}|{page+1}|{uid}|{original_mid}", style='success'))
     markup.row(*nav)
 
     text = f"📂 <b>Anime Index: '{letter.upper()}'</b>\nTotal Results: <code>{len(unique_items)}</code>"
@@ -170,7 +170,7 @@ def send_index_page(chat_id, letter, page, original_mid, uid, edit_mid=None):
         delete_msg_timer(chat_id, [edit_mid, original_mid], 300)
     except: pass
 
-@bot.callback_query_handler(func=lambda call: call.data.startswith(('ind', 'res')))
+@bot.callback_query_handler(func=lambda call: call.data.startswith(('ind', 'res', 'check_fsub')))
 def handle_callbacks(call):
     data = call.data.split("|")
     
@@ -179,6 +179,13 @@ def handle_callbacks(call):
         searcher_id = int(data[3]) 
     elif data[0] == "res":
         searcher_id = int(data[2])
+    elif data[0] == "check_fsub":
+        # Anyone can click Try Again, it will re-check their status
+        bot.answer_callback_query(call.id, "Checking...")
+        try: bot.delete_message(call.message.chat.id, call.message.message_id)
+        except: pass
+        bot.send_message(call.message.chat.id, "<b>Re-check complete. Please search for your anime again!</b>", parse_mode="HTML")
+        return
     else:
         return # Agar koi aur button ho toh ignore karein
 
@@ -234,20 +241,23 @@ def send_final_result(message, data, r_mid):
             invite = bot.create_chat_invite_link(int(data['source_cid']), expire_date=expire_time, member_limit=1)
 
             btn_text = settings.get('button_text', "Watch & Download")
-            markup.add(types.InlineKeyboardButton(f"🎬 {btn_text}", url=invite.invite_link))
+            markup.add(types.InlineKeyboardButton(f"🎬 {btn_text}", url=invite.invite_link, style='success'))
             res_msg = bot.copy_message(message.chat.id, int(config.DB_CHANNEL_ID), int(data['db_mid']), reply_markup=markup, reply_to_message_id=r_mid)
 
         delete_msg_timer(message.chat.id, [res_msg.message_id, r_mid], del_time)
     except Exception as e:
         bot.send_message(message.chat.id, f"❌ <b>Error!</b>\n<code>{str(e)}</code>", reply_to_message_id=r_mid)
 
-def send_fsub_message(message, missing, request_fsubs):
+def send_fsub_message(message, missing):
     markup = types.InlineKeyboardMarkup()
     for f in missing:
-        invite = bot.create_chat_invite_link(int(f['_id']), expire_date=int(time.time())+120, member_limit=1)
-        markup.add(types.InlineKeyboardButton(f"✨ Join Channel ✨", url=invite.invite_link))
-    for r in request_fsubs:
-        invite = bot.create_chat_invite_link(int(r['_id']), expire_date=int(time.time())+300, creates_join_request=True)
-        markup.add(types.InlineKeyboardButton(f"✨ Request to Join ✨", url=invite.invite_link))
-    markup.add(types.InlineKeyboardButton("📞 Contact Admin", url=config.HELP_ADMIN))
+        cid = int(f['_id'])
+        if f.get('mode') == 'request':
+            invite = bot.create_chat_invite_link(cid, creates_join_request=True)
+            markup.add(types.InlineKeyboardButton("✨ Request to Join ✨", url=invite.invite_link, style='primary'))
+        else:
+            invite = bot.create_chat_invite_link(cid)
+            markup.add(types.InlineKeyboardButton("✨ Join Channel ✨", url=invite.invite_link, style='success'))
+
+    markup.add(types.InlineKeyboardButton("• Try Again •", callback_data="check_fsub", style='primary'))
     bot.reply_to(message, "<b>⚠️ Access Restricted!</b>\nJoin our official channels to view results.", reply_markup=markup, parse_mode="HTML")

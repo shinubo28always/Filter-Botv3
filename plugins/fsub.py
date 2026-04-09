@@ -26,8 +26,8 @@ def add_fsub_start(message):
         
         markup = types.InlineKeyboardMarkup()
         markup.row(
-            types.InlineKeyboardButton("🔴 Normal", callback_data=f"fsub_init|normal|{target_id}|{chat.title}"),
-            types.InlineKeyboardButton("🟢 Request", callback_data=f"fsub_init|request|{target_id}|{chat.title}")
+            types.InlineKeyboardButton("🔴 Normal", callback_data=f"fsub_init|normal|{target_id}|{chat.title}", style='primary'),
+            types.InlineKeyboardButton("🟢 Request", callback_data=f"fsub_init|request|{target_id}|{chat.title}", style='success')
         )
         bot.reply_to(message, f"⚙️ <b>Select Mode for:</b>\n{chat.title}", reply_markup=markup, parse_mode="HTML")
     except Exception as e:
@@ -64,7 +64,7 @@ def send_main_menu(chat_id, edit_mid=None):
         # DB structure ke hisaab se c['_id'] ya c['cid'] check karein
         cid = c.get('_id', c.get('cid'))
         emoji = "🟢" if c.get('mode') == "request" else "🔴"
-        markup.add(types.InlineKeyboardButton(f"{emoji} {c['title']}", callback_data=f"fsub_manage|{cid}"))
+        markup.add(types.InlineKeyboardButton(f"{emoji} {c['title']}", callback_data=f"fsub_manage|{cid}", style='primary'))
     
     txt = "📢 <b>FSub Management List:</b>\nClick a channel to change mode or delete."
     if edit_mid: 
@@ -84,15 +84,15 @@ def manage_channel_ui(call):
     
     markup = types.InlineKeyboardMarkup()
     markup.row(
-        types.InlineKeyboardButton("🔴 Normal", callback_data=f"fsub_upd|normal|{cid}"),
-        types.InlineKeyboardButton("🟢 Request", callback_data=f"fsub_upd|request|{cid}")
+        types.InlineKeyboardButton("🔴 Normal", callback_data=f"fsub_upd|normal|{cid}", style='primary'),
+        types.InlineKeyboardButton("🟢 Request", callback_data=f"fsub_upd|request|{cid}", style='success')
     )
 
     auto_text = "✅ Auto-Approve: ON" if info.get('auto_approve') else "❌ Auto-Approve: OFF"
-    markup.add(types.InlineKeyboardButton(auto_text, callback_data=f"fsub_auto|{cid}"))
+    markup.add(types.InlineKeyboardButton(auto_text, callback_data=f"fsub_auto|{cid}", style='primary'))
 
-    markup.add(types.InlineKeyboardButton("🗑️ Remove Channel", callback_data=f"fsub_del_single|{cid}"))
-    markup.add(types.InlineKeyboardButton("⬅️ Back to List", callback_data="fsub_back"))
+    markup.add(types.InlineKeyboardButton("🗑️ Remove Channel", callback_data=f"fsub_del_single|{cid}", style='danger'))
+    markup.add(types.InlineKeyboardButton("⬅️ Back to List", callback_data="fsub_back", style='success'))
     
     curr_mode = "🔴 Normal" if info.get('mode') == "normal" else "🟢 Request"
     txt = f"⚙️ <b>Manage Channel:</b>\n\nName: <b>{info['title']}</b>\nID: <code>{cid}</code>\nMode: <b>{curr_mode}</b>\nAuto-Approve: <b>{'ON' if info.get('auto_approve') else 'OFF'}</b>\n\nChoose new mode below:"
@@ -136,8 +136,8 @@ def del_fsub_handler(message):
     target = args[1].lower()
     if target == "all":
         markup = types.InlineKeyboardMarkup().add(
-            types.InlineKeyboardButton("✅ Confirm Delete All", callback_data="fsub_del_all"),
-            types.InlineKeyboardButton("❌ Cancel", callback_data="fsub_back")
+            types.InlineKeyboardButton("✅ Confirm Delete All", callback_data="fsub_del_all", style='danger'),
+            types.InlineKeyboardButton("❌ Cancel", callback_data="fsub_back", style='success')
         )
         bot.reply_to(message, "⚠️ <b>Warning:</b> Are you sure you want to delete ALL FSub channels?", reply_markup=markup, parse_mode="HTML")
     else:

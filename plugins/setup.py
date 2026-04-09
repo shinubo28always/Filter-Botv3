@@ -43,9 +43,9 @@ def search_and_show_options(message):
         title = ani['title']['english'] or ani['title']['romaji']
         format_type = ani.get('format', 'N/A')
         # Button text format: [MOVIE] One Piece Red
-        markup.add(types.InlineKeyboardButton(f"[{format_type}] {title}", callback_data=f"pick_ani|{ani['id']}"))
+        markup.add(types.InlineKeyboardButton(f"[{format_type}] {title}", callback_data=f"pick_ani|{ani['id']}", style='primary'))
     
-    markup.add(types.InlineKeyboardButton("❌ Cancel Setup", callback_data="cancel_setup"))
+    markup.add(types.InlineKeyboardButton("❌ Cancel Setup", callback_data="cancel_setup", style='danger'))
     m = bot.send_message(uid, "🧐 <b>Multiple results found! Choose the correct one:</b>", reply_markup=markup)
     TEMP_SETUP[uid]['m_choice'] = m.message_id
 
@@ -63,7 +63,7 @@ def pick_anime(call):
         return bot.send_message(uid, "❌ Error fetching details. Try again.")
 
     TEMP_SETUP[uid].update(info)
-    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✅ Confirm & Post", callback_data="conf_save"))
+    markup = types.InlineKeyboardMarkup().add(types.InlineKeyboardButton("✅ Confirm & Post", callback_data="conf_save", style='success'))
     p = bot.send_photo(uid, info['poster'], caption=info['caption'], reply_markup=markup, parse_mode='HTML')
     TEMP_SETUP[uid]['m2'] = p.message_id
 
